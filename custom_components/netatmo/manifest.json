@@ -1,0 +1,17 @@
+{
+  "domain": "netatmo",
+  "name": "Netatmo Plus",
+  "after_dependencies": ["cloud", "media_source"],
+  "codeowners": ["@GuiPoM"],
+  "config_flow": true,
+  "dependencies": ["application_credentials", "webhook"],
+  "documentation": "https://github.com/GuiPoM/netatmo-plus",
+  "homekit": {
+    "models": ["Healthy Home Coach", "Netatmo Relay", "Presence", "Welcome"]
+  },
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "loggers": ["pyatmo"],
+  "requirements": ["pyatmo@git+https://github.com/GuiPoM/pyatmo.git@feature/siren-app-endpoint"],
+  "version": "1.0.0"
+}
