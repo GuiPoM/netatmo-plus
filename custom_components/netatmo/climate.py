@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import logging
 from typing import Any, cast
 
@@ -37,6 +38,7 @@ from .const import (
     ATTR_END_DATETIME,
     ATTR_HEATING_POWER_REQUEST,
     ATTR_SCHEDULE_NAME,
+    ATTR_SCHEDULED_TEMPERATURE,
     ATTR_SELECTED_SCHEDULE,
     ATTR_SELECTED_SCHEDULE_ID,
     ATTR_TARGET_TEMPERATURE,
@@ -435,6 +437,9 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
         self._attr_extra_state_attributes[ATTR_SELECTED_SCHEDULE_ID] = getattr(
             selected_schedule, "entity_id", None
         )
+        self._attr_extra_state_attributes[ATTR_SCHEDULED_TEMPERATURE] = (
+            self._get_scheduled_setpoint()
+        )
 
         if self.device_type == NA_VALVE:
             self._attr_extra_state_attributes[ATTR_HEATING_POWER_REQUEST] = (
@@ -447,6 +452,30 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
                     if module.boiler_status is not None:
                         self._boilerstatus = module.boiler_status
                         break
+
+    def _get_scheduled_setpoint(self) -> float | None:
+        """Return the scheduled setpoint temperature for this room at the current time."""
+        schedule = self.home.get_selected_schedule()
+        if schedule is None or not schedule.timetable:
+            return None
+
+        now = datetime.now(timezone.utc)
+        minute_of_week = now.weekday() * 1440 + now.hour * 60 + now.minute
+
+        active_zone_id = schedule.timetable[0].zone_id
+        for entry in schedule.timetable:
+            if entry.m_offset <= minute_of_week:
+                active_zone_id = entry.zone_id
+            else:
+                break
+
+        for zone in schedule.zones:
+            if int(zone.entity_id) == active_zone_id:
+                for room in zone.rooms:
+                    if room.entity_id == self.device.entity_id:
+                        return room.therm_setpoint_temperature
+
+        return None
 
     async def _async_service_set_schedule(self, **kwargs: Any) -> None:
         schedule_name = kwargs.get(ATTR_SCHEDULE_NAME)
