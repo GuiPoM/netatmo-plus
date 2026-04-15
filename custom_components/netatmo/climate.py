@@ -39,6 +39,7 @@ from .const import (
     ATTR_HEATING_POWER_REQUEST,
     ATTR_SCHEDULE_NAME,
     ATTR_SCHEDULED_TEMPERATURE,
+    ATTR_SCHEDULED_ZONE_NAME,
     ATTR_SELECTED_SCHEDULE,
     ATTR_SELECTED_SCHEDULE_ID,
     ATTR_TARGET_TEMPERATURE,
@@ -440,6 +441,9 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
         self._attr_extra_state_attributes[ATTR_SCHEDULED_TEMPERATURE] = (
             self._get_scheduled_setpoint()
         )
+        self._attr_extra_state_attributes[ATTR_SCHEDULED_ZONE_NAME] = (
+            self._get_scheduled_zone_name()
+        )
 
         if self.device_type == NA_VALVE:
             self._attr_extra_state_attributes[ATTR_HEATING_POWER_REQUEST] = (
@@ -455,6 +459,25 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
 
     def _get_scheduled_setpoint(self) -> float | None:
         """Return the scheduled setpoint temperature for this room at the current time."""
+        zone = self._get_active_zone()
+        if zone is None:
+            return None
+        return next(
+            (
+                r.therm_setpoint_temperature
+                for r in zone.rooms
+                if r.entity_id == self.device.entity_id
+            ),
+            None,
+        )
+
+    def _get_scheduled_zone_name(self) -> str | None:
+        """Return the name of the active schedule zone (e.g. Confort, Eco, Nuit)."""
+        zone = self._get_active_zone()
+        return zone.name if zone is not None else None
+
+    def _get_active_zone(self):
+        """Return the currently active schedule zone."""
         schedule = self.home.get_selected_schedule()
         if schedule is None or not schedule.timetable:
             return None
@@ -469,13 +492,10 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
             else:
                 break
 
-        for zone in schedule.zones:
-            if int(zone.entity_id) == active_zone_id:
-                for room in zone.rooms:
-                    if room.entity_id == self.device.entity_id:
-                        return room.therm_setpoint_temperature
-
-        return None
+        return next(
+            (z for z in schedule.zones if int(z.entity_id) == active_zone_id),
+            None,
+        )
 
     async def _async_service_set_schedule(self, **kwargs: Any) -> None:
         schedule_name = kwargs.get(ATTR_SCHEDULE_NAME)

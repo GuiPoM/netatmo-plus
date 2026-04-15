@@ -110,6 +110,7 @@ ATTR_SCHEDULE_NAME = "schedule_name"
 ATTR_SELECTED_SCHEDULE = "selected_schedule"
 ATTR_SELECTED_SCHEDULE_ID = "selected_schedule_id"
 ATTR_SCHEDULED_TEMPERATURE = "scheduled_temperature"
+ATTR_SCHEDULED_ZONE_NAME = "scheduled_zone_name"
 ATTR_TARGET_TEMPERATURE = "target_temperature"
 ATTR_TIME_PERIOD = "time_period"
 
