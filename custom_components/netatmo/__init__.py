@@ -36,6 +36,8 @@ from . import api
 from .const import (
     AUTH,
     CONF_CLOUDHOOK_URL,
+    CONF_SIREN_EMAIL,
+    CONF_SIREN_PASSWORD,
     CONF_SIREN_TOKEN,
     DATA_CAMERAS,
     DATA_DEVICE_IDS,
