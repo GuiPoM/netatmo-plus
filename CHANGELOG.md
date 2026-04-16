@@ -6,32 +6,64 @@ All notable changes to Netatmo Plus are documented here.
 
 ## [Unreleased]
 
+### Fixed — Siren
+- Siren entity availability now based on `alim_status` instead of webhook status — siren is available as long as the camera is powered, regardless of webhook registration state
+
+### Fixed — Camera
+- `reachable` attribute: show `None` when not initialized instead of misleading `false`
+
+---
+
+## [v1.3.3] — 2026-04-16
+
+### Fixed
+- Missing `callback` import in `__init__.py` causing startup error
+
+---
+
+## [v1.3.2] — 2026-04-16
+
+### Fixed
+- Web session auth now updated immediately when siren credentials are saved via options flow — no more manual reload required
+
+---
+
+## [v1.3.1] — 2026-04-16
+
+### Fixed
+- Missing `CONF_SIREN_EMAIL` and `CONF_SIREN_PASSWORD` imports in `__init__.py` causing startup error
+
+---
+
+## [v1.3.0] — 2026-04-16
+
+### Added — Siren
+- Automatic re-login on token expiry — transparent, no user intervention required
+- Password stored in options for automatic re-authentication
+
 ### Added — Climate
-- `open_window` attribute — whether open-window detection has suppressed heating
-- `anticipating` attribute — whether the thermostat is pre-heating for the next scheduled slot
-- `setpoint_end_time` attribute — ISO datetime when the current manual override expires (null if in schedule mode)
-- `away_temperature` attribute — configured away-mode setpoint from the active schedule
-- `frost_guard_temperature` attribute — configured frost-guard setpoint from the active schedule
+- `open_window` attribute — open window detection active
+- `anticipating` attribute — pre-heating for next scheduled slot
+- `setpoint_end_time` attribute — ISO datetime when manual override expires
+- `away_temperature` attribute — configured away-mode setpoint from active schedule
+- `frost_guard_temperature` attribute — configured frost-guard setpoint
 - `heating_power_request` attribute — now exposed for NATherm1 rooms (was NRV valves only)
 
 ### Added — Camera
-- `reachable` attribute — actual device reachability (was not exposed, availability was incorrectly derived from `alim_status`)
+- `reachable` attribute — device reachability
 - `wifi_strength` attribute — Wi-Fi signal strength (integer)
-- `firmware` attribute — human-readable firmware version string (e.g. `NOC-3.3.1`)
+- `firmware` attribute — human-readable firmware version string
 
 ### Fixed — Camera
-- `light_state` — was only updated via webhook (null after restart). Now initialized from the polled `device.floodlight` value on each update cycle, with webhook updates still applied on top.
-
-### Added — Siren
-- Automatic re-login on token expiry — when the Netatmo web session token expires (code 3), the integration automatically re-logs in and retries the command transparently. No user intervention required.
+- `light_state` — was only updated via webhook (null after restart). Now initialized from polled `device.floodlight` value
 
 ---
 
 ## [v1.2.0] — 2026-04-15
 
 ### Added — Climate
-- `scheduled_temperature` attribute — the scheduled setpoint temperature for the room at the current time, computed from the active Netatmo schedule timetable
-- `scheduled_zone_name` attribute — the name of the currently active schedule zone (e.g. Confort, Eco, Nuit) as defined by the user in the Netatmo app
+- `scheduled_temperature` attribute — scheduled setpoint temperature for the room at current time
+- `scheduled_zone_name` attribute — name of the currently active schedule zone (e.g. Confort, Eco, Nuit)
 
 ---
 

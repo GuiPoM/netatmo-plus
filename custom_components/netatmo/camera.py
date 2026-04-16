@@ -271,7 +271,9 @@ class NetatmoCamera(NetatmoModuleEntity, Camera):
                 "vpn_url": self.device.vpn_url,
                 "local_url": self.device.local_url,
                 "light_state": self._light_state,
-                "reachable": self.device.reachable,
+                "reachable": self.device.reachable
+                if self.device.reachable is not None
+                else None,
                 "wifi_strength": getattr(self.device, "wifi_strength", None),
                 "firmware": getattr(self.device, "firmware_name", None),
             }
