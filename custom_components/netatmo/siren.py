@@ -101,10 +101,7 @@ class NetatmoCameraSiren(NetatmoModuleEntity, SirenEntity):
             self._attr_is_on = True
             self.async_write_ha_state()
         else:
-            raise HomeAssistantError(
-                "Siren command failed. Token may have expired. "
-                "Please reconfigure siren credentials in integration options."
-            )
+            raise HomeAssistantError("Siren command failed.")
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn camera siren off."""
@@ -122,10 +119,7 @@ class NetatmoCameraSiren(NetatmoModuleEntity, SirenEntity):
             self._attr_is_on = False
             self.async_write_ha_state()
         else:
-            raise HomeAssistantError(
-                "Siren command failed. Token may have expired. "
-                "Please reconfigure siren credentials in integration options."
-            )
+            raise HomeAssistantError("Siren command failed.")
 
     @callback
     def async_update_callback(self) -> None:

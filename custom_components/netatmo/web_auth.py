@@ -22,10 +22,14 @@ class NetatmoWebSessionAuth:
         self,
         websession: aiohttp.ClientSession,
         token: str | None = None,
+        email: str | None = None,
+        password: str | None = None,
     ) -> None:
         """Initialize the web session auth."""
         self._websession = websession
         self._token = token
+        self._email = email
+        self._password = password
 
     @property
     def token(self) -> str | None:
@@ -106,7 +110,28 @@ class NetatmoWebSessionAuth:
                 raise aiohttp.ClientError("Login failed - no access token received")
 
             _LOGGER.debug("Netatmo web session token obtained successfully")
-            return cls(websession, token)
+            return cls(websession, token=token, email=email, password=password)
+
+    async def _async_relogin(self) -> bool:
+        """Re-login to get a fresh token. Returns True if successful."""
+        if not self._email or not self._password:
+            _LOGGER.error("Cannot re-login: no credentials stored")
+            return False
+
+        _LOGGER.debug("Netatmo siren token expired, re-logging in")
+        try:
+            async with aiohttp.ClientSession(
+                cookie_jar=aiohttp.CookieJar()
+            ) as login_session:
+                fresh = await NetatmoWebSessionAuth.async_login(
+                    login_session, self._email, self._password
+                )
+            self._token = fresh.token
+            _LOGGER.debug("Netatmo siren re-login successful")
+            return True
+        except aiohttp.ClientError as err:
+            _LOGGER.error("Netatmo siren re-login failed: %s", err)
+            return False
 
     async def async_set_siren_state(
         self,
@@ -114,10 +139,10 @@ class NetatmoWebSessionAuth:
         module_id: str,
         state: str,
     ) -> bool:
-        """Set siren state using web session token."""
+        """Set siren state using web session token, with automatic re-login on expiry."""
         if not self._token:
-            _LOGGER.error("No web session token available for siren control")
-            return False
+            if not await self._async_relogin():
+                return False
 
         payload: dict[str, Any] = {
             "home": {
@@ -139,10 +164,30 @@ class NetatmoWebSessionAuth:
             data = await resp.json()
             if data.get("status") == "ok":
                 return True
-            _LOGGER.error("Siren setstate failed: %s", data.get("error", data))
-            # Token may have expired
-            if data.get("error", {}).get("code") in (2, 3, 13):
+
+            error = data.get("error", {})
+            _LOGGER.debug("Siren setstate response: %s", error)
+
+            # Token expired — re-login once and retry
+            if error.get("code") in (2, 3, 13):
                 self._token = None
+                if await self._async_relogin():
+                    # Retry with new token
+                    async with self._websession.post(
+                        NETATMO_SETSTATE_URL,
+                        json=payload,
+                        headers={"Authorization": f"Bearer {self._token}"},
+                    ) as retry_resp:
+                        retry_data = await retry_resp.json()
+                        if retry_data.get("status") == "ok":
+                            return True
+                        _LOGGER.error(
+                            "Siren setstate failed after re-login: %s",
+                            retry_data.get("error", retry_data),
+                        )
+                        return False
+
+            _LOGGER.error("Siren setstate failed: %s", error)
             return False
 
     async def async_siren_on(self, home_id: str, module_id: str) -> bool:

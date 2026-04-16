@@ -122,6 +122,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN][entry.entry_id][WEB_SESSION_AUTH] = NetatmoWebSessionAuth(
             aiohttp_client.async_get_clientsession(hass),
             token=siren_token,
+            email=entry.options.get(CONF_SIREN_EMAIL),
+            password=entry.options.get(CONF_SIREN_PASSWORD),
         )
         _LOGGER.debug("Netatmo web session auth initialized for siren control")
 

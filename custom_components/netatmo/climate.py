@@ -35,13 +35,18 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    ATTR_ANTICIPATING,
+    ATTR_AWAY_TEMPERATURE,
     ATTR_END_DATETIME,
+    ATTR_FROST_GUARD_TEMPERATURE,
     ATTR_HEATING_POWER_REQUEST,
+    ATTR_OPEN_WINDOW,
     ATTR_SCHEDULE_NAME,
     ATTR_SCHEDULED_TEMPERATURE,
     ATTR_SCHEDULED_ZONE_NAME,
     ATTR_SELECTED_SCHEDULE,
     ATTR_SELECTED_SCHEDULE_ID,
+    ATTR_SETPOINT_END_TIME,
     ATTR_TARGET_TEMPERATURE,
     ATTR_TIME_PERIOD,
     DATA_SCHEDULES,
@@ -444,12 +449,35 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
         self._attr_extra_state_attributes[ATTR_SCHEDULED_ZONE_NAME] = (
             self._get_scheduled_zone_name()
         )
+        self._attr_extra_state_attributes[ATTR_AWAY_TEMPERATURE] = getattr(
+            selected_schedule, "away_temp", None
+        )
+        self._attr_extra_state_attributes[ATTR_FROST_GUARD_TEMPERATURE] = getattr(
+            selected_schedule, "hg_temp", None
+        )
+        self._attr_extra_state_attributes[ATTR_OPEN_WINDOW] = getattr(
+            self.device, "open_window", None
+        )
+        self._attr_extra_state_attributes[ATTR_ANTICIPATING] = getattr(
+            self.device, "anticipating", None
+        )
+
+        # setpoint_end_time — convert Unix timestamp to ISO datetime string
+        end_time = getattr(self.device, "therm_setpoint_end_time", None)
+        self._attr_extra_state_attributes[ATTR_SETPOINT_END_TIME] = (
+            dt_util.utc_from_timestamp(end_time).isoformat() if end_time else None
+        )
 
         if self.device_type == NA_VALVE:
             self._attr_extra_state_attributes[ATTR_HEATING_POWER_REQUEST] = (
                 self.device.heating_power_request
             )
         else:
+            # Also expose heating_power_request for NATherm1 rooms
+            if hasattr(self.device, "heating_power_request"):
+                self._attr_extra_state_attributes[ATTR_HEATING_POWER_REQUEST] = (
+                    self.device.heating_power_request
+                )
             for module in self.device.modules.values():
                 if hasattr(module, "boiler_status"):
                     module = cast(NATherm1, module)

@@ -139,6 +139,7 @@ class NetatmoOptionsFlowHandler(OptionsFlow):
                         )
                     self.options[CONF_SIREN_TOKEN] = web_auth.token
                     self.options[CONF_SIREN_EMAIL] = email
+                    self.options[CONF_SIREN_PASSWORD] = password
                     _LOGGER.debug("Netatmo siren web session login successful")
                 except aiohttp.ClientError:
                     errors["base"] = "siren_login_failed"
