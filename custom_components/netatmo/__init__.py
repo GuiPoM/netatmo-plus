@@ -18,7 +18,7 @@ from homeassistant.components.webhook import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_WEBHOOK_ID, EVENT_HOMEASSISTANT_STOP
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import aiohttp_client, config_validation as cv
 from homeassistant.helpers.config_entry_oauth2_flow import (
