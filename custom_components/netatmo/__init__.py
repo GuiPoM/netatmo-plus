@@ -129,6 +129,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
         _LOGGER.debug("Netatmo web session auth initialized for siren control")
 
+    @callback
+    def _async_update_web_session_auth(
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+    ) -> None:
+        """Update web session auth when options change."""
+        new_token = entry.options.get(CONF_SIREN_TOKEN)
+        if new_token:
+            hass.data[DOMAIN][entry.entry_id][WEB_SESSION_AUTH] = NetatmoWebSessionAuth(
+                aiohttp_client.async_get_clientsession(hass),
+                token=new_token,
+                email=entry.options.get(CONF_SIREN_EMAIL),
+                password=entry.options.get(CONF_SIREN_PASSWORD),
+            )
+            _LOGGER.debug("Netatmo web session auth updated from options change")
+        else:
+            hass.data[DOMAIN][entry.entry_id].pop(WEB_SESSION_AUTH, None)
+
+    entry.async_on_unload(entry.add_update_listener(_async_update_web_session_auth))
+
     data_handler = NetatmoDataHandler(hass, entry)
     hass.data[DOMAIN][entry.entry_id][DATA_HANDLER] = data_handler
     await data_handler.async_setup()
