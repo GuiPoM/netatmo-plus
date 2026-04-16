@@ -7,7 +7,10 @@
 
 This is a complete replacement for the built-in integration, adding features that are not yet available in the official integration.
 
-**📖 [View Full Documentation](DEVELOPMENT.md)** - Complete guide for development and maintenance.
+**📖 [View Full Documentation](DEVELOPMENT.md)** — Complete guide for development and maintenance.
+**📋 [Changelog](CHANGELOG.md)** — Full release history.
+
+---
 
 ## Added Features
 
@@ -15,13 +18,7 @@ This is a complete replacement for the built-in integration, adding features tha
 
 **Trigger and stop the built-in siren of the Netatmo Outdoor Camera (NOC/Presence) from Home Assistant.**
 
-The Netatmo public OAuth2 API does not expose siren control — it is only accessible via the Netatmo web session API. This integration handles the authentication transparently, requiring a one-time login via the integration options.
-
-#### How It Works
-
-- A `siren` entity is created for each NOC camera
-- Trigger the siren from automations, dashboards, or voice assistants
-- Stop the siren at any time
+The Netatmo public OAuth2 API does not expose siren control — it is only accessible via the Netatmo web session API. This integration handles the authentication transparently.
 
 #### Configuration
 
@@ -33,7 +30,9 @@ After installation:
 4. Click **Submit** — a confirmation email will be sent by Netatmo
 5. The siren entity `siren.garage` (or similar) is now operational
 
-**Note:** Netatmo sends a login notification email. This only happens once — the session token persists server-side and does not require periodic re-login.
+**Notes:**
+- Netatmo sends a login notification email on first setup
+- The session token persists server-side — re-login is automatic on expiry, no user intervention needed
 
 #### Usage
 
@@ -51,9 +50,34 @@ target:
 
 ---
 
-### 2. Fix: `monitoring` attribute
+### 2. Additional Climate Attributes
 
-The official integration reports `monitoring: null` for the NOC camera instead of the actual monitoring state (`true`/`false`). This is fixed in Netatmo Plus.
+The following attributes are added to thermostat/valve climate entities:
+
+| Attribute | Description |
+|---|---|
+| `scheduled_temperature` | Current scheduled setpoint from active schedule |
+| `scheduled_zone_name` | Active schedule zone name (e.g. Confort, Eco, Nuit) |
+| `away_temperature` | Configured away-mode setpoint |
+| `frost_guard_temperature` | Configured frost-guard setpoint |
+| `open_window` | Whether open-window detection has suppressed heating |
+| `anticipating` | Whether the thermostat is pre-heating for the next slot |
+| `setpoint_end_time` | ISO datetime when the current manual override expires |
+| `heating_power_request` | Heating demand % (NRV valves and NATherm1 rooms) |
+
+---
+
+### 3. Additional Camera Attributes
+
+The following attributes are added to `camera.garage` (and any NOC camera entity):
+
+| Attribute | Description |
+|---|---|
+| `monitoring` | Fixed: correctly reports `true`/`false` (was always `null`) |
+| `light_state` | Fixed: now reflects polled API value (was stale after restart) |
+| `wifi_strength` | Wi-Fi signal strength (integer) |
+| `reachable` | Device reachability |
+| `firmware` | Human-readable firmware version |
 
 ---
 
@@ -61,9 +85,10 @@ The official integration reports `monitoring: null` for the NOC camera instead o
 
 These features are not yet in the official integration because:
 
-1. **Siren control** requires the Netatmo web session API — a PR has been submitted to pyatmo ([#554](https://github.com/jabesq-org/pyatmo/pull/554)) but the public OAuth2 API does not yet support `siren_status`. Once Netatmo opens the endpoint in their public API and pyatmo is updated, this will be contributed upstream.
+1. **Siren control** requires the Netatmo web session API — the public OAuth2 API does not expose `siren_status`. A PR has been submitted to pyatmo ([#554](https://github.com/jabesq-org/pyatmo/pull/554)).
+2. **Attribute additions and fixes** are pending upstream contribution.
 
-2. **`monitoring` fix** is a straightforward bug fix being tracked for upstream contribution.
+---
 
 ## Installation
 
@@ -87,6 +112,8 @@ These features are not yet in the official integration because:
 3. Copy it to your `<config>/custom_components/` directory
 4. Restart Home Assistant
 
+---
+
 ## Setup
 
 This custom component **replaces** the built-in Netatmo integration. When installed in `custom_components/netatmo/`:
@@ -98,11 +125,15 @@ This custom component **replaces** the built-in Netatmo integration. When instal
 
 **Configure as usual** — the integration uses the same OAuth2 flow as the official integration. After setup, configure siren credentials via the **Configure** button.
 
+---
+
 ## Compatibility
 
 - **Home Assistant**: 2026.3.0 or later
 - Based on Home Assistant 2026.3.0 core Netatmo integration
 - Compatible with all official Netatmo features
+
+---
 
 ## How to Revert to the Official Integration
 
@@ -115,11 +146,7 @@ rm -rf <config>/custom_components/netatmo/
 
 Home Assistant will automatically load the built-in version again.
 
-## Contributing
-
-This fork maintains a minimal set of additions on top of the official integration. The goal is to upstream everything — contributions that help achieve that are welcome.
-
-See [DEVELOPMENT.md](DEVELOPMENT.md) for details.
+---
 
 ## Support
 
