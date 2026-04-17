@@ -4,7 +4,9 @@
 
 **Before every release, always:**
 
-1. **Verify imports** — copy modified files to the Docker devcontainer and run import checks:
+1. **Update version** in `custom_components/netatmo/manifest.json`
+
+2. **Verify imports** — copy modified files to the Docker devcontainer and run import checks:
    ```bash
    docker cp <file> magical_keller:/tmp/<file>
    # Then run syntax/import check via check script
