@@ -4,7 +4,7 @@
 
 **Before every release, always:**
 
-1. **Update version** in `custom_components/netatmo/manifest.json`
+1. **Update version** in `custom_components/netatmo/manifest.json` to match the new release number (e.g. `1.3.5` for release `v1.3.5`). Commit this alongside the other changes — never release with a mismatched version.
 
 2. **Verify imports** — copy modified files to the Docker devcontainer and run import checks:
    ```bash
