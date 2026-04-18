@@ -14,6 +14,13 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v1.3.6] — 2026-04-18
+
+### Fixed — Camera
+- `monitoring` attribute: now correctly reflects webhook on/off updates while falling back to polled API value at startup (fixes `monitoring: null` on first load without breaking webhook-based updates)
+
+---
+
 ## [v1.3.3] — 2026-04-16
 
 ### Fixed
