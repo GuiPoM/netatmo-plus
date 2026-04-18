@@ -264,7 +264,9 @@ class NetatmoCamera(NetatmoModuleEntity, Camera):
         self._attr_extra_state_attributes.update(
             {
                 "id": self.device.entity_id,
-                "monitoring": self.device.monitoring,
+                "monitoring": self._monitoring
+                if self._monitoring is not None
+                else self.device.monitoring,
                 "sd_status": self.device.sd_status,
                 "alim_status": self.device.alim_status,
                 "is_local": self.device.is_local,
