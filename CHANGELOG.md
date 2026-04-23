@@ -4,20 +4,16 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
-## [Unreleased]
+## [v1.3.6] — 2026-04-18
+
+### Fixed — Camera
+- `monitoring` attribute: now correctly reflects webhook on/off updates while falling back to polled API value at startup (fixes `monitoring: null` on first load without breaking webhook-based updates)
 
 ### Fixed — Siren
 - Siren entity availability now based on `alim_status` instead of webhook status — siren is available as long as the camera is powered, regardless of webhook registration state
 
 ### Fixed — Camera
 - `reachable` attribute: show `None` when not initialized instead of misleading `false`
-
----
-
-## [v1.3.6] — 2026-04-18
-
-### Fixed — Camera
-- `monitoring` attribute: now correctly reflects webhook on/off updates while falling back to polled API value at startup (fixes `monitoring: null` on first load without breaking webhook-based updates)
 
 ---
 
