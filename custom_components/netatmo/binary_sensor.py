@@ -453,6 +453,7 @@ class NetatmoCOAlarmBinarySensor(NetatmoModuleEntity, BinarySensorEntity):
     _attr_has_entity_name = True
     _attr_name = None
     _attr_is_on: bool = False
+    _attr_available: bool = True
 
     def __init__(self, netatmo_device: NetatmoDevice) -> None:
         """Initialize the CO alarm sensor."""
@@ -471,7 +472,8 @@ class NetatmoCOAlarmBinarySensor(NetatmoModuleEntity, BinarySensorEntity):
     @callback
     def async_update_callback(self) -> None:
         """Update the entity's state."""
-        self._attr_available = self.device.reachable is not False
+        # NCO has no reliable reachability info — always available
+        pass
 
     def handle_webhook_event(self, data: dict) -> None:
         """Handle webhook events for CO alarm."""
@@ -499,6 +501,7 @@ class NetatmoSmokeAlarmBinarySensor(NetatmoModuleEntity, BinarySensorEntity):
     _attr_has_entity_name = True
     _attr_name = None
     _attr_is_on: bool = False
+    _attr_available: bool = True
 
     def __init__(self, netatmo_device: NetatmoDevice) -> None:
         """Initialize the smoke alarm sensor."""
@@ -517,7 +520,8 @@ class NetatmoSmokeAlarmBinarySensor(NetatmoModuleEntity, BinarySensorEntity):
     @callback
     def async_update_callback(self) -> None:
         """Update the entity's state."""
-        self._attr_available = self.device.reachable is not False
+        # NSD has no reliable reachability info — always available
+        pass
 
     def handle_webhook_event(self, data: dict) -> None:
         """Handle webhook events for smoke alarm."""
