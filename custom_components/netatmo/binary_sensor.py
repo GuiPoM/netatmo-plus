@@ -34,11 +34,13 @@ from .const import (
     DOORTAG_STATUS_OPEN,
     DOORTAG_STATUS_UNDEFINED,
     DOORTAG_STATUS_WEAK_SIGNAL,
+    NETATMO_CREATE_CO_SENSOR,
     NETATMO_CREATE_CONNECTIVITY_BINARY_SENSOR,
     NETATMO_CREATE_OPENING_BINARY_SENSOR,
+    NETATMO_CREATE_SMOKE_SENSOR,
     NETATMO_CREATE_WEATHER_BINARY_SENSOR,
 )
-from .data_handler import SIGNAL_NAME, NetatmoDevice
+from .data_handler import HOME, SIGNAL_NAME, NetatmoDevice
 from .entity import NetatmoModuleEntity, NetatmoWeatherModuleEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -271,6 +273,23 @@ async def async_setup_entry(
         )
     )
 
+    @callback
+    def _create_co_sensor(netatmo_device: NetatmoDevice) -> None:
+        async_add_entities([NetatmoCOAlarmBinarySensor(netatmo_device)])
+
+    @callback
+    def _create_smoke_sensor(netatmo_device: NetatmoDevice) -> None:
+        async_add_entities([NetatmoSmokeAlarmBinarySensor(netatmo_device)])
+
+    entry.async_on_unload(
+        async_dispatcher_connect(hass, NETATMO_CREATE_CO_SENSOR, _create_co_sensor)
+    )
+    entry.async_on_unload(
+        async_dispatcher_connect(
+            hass, NETATMO_CREATE_SMOKE_SENSOR, _create_smoke_sensor
+        )
+    )
+
 
 class NetatmoBinarySensor(NetatmoModuleEntity, BinarySensorEntity):
     """Implementation of a Netatmo binary sensor."""
@@ -409,3 +428,111 @@ class NetatmoConnectivityBinarySensor(NetatmoBinarySensor):
 
     entity_description: NetatmoBinarySensorEntityDescription
     _attr_has_entity_name = True
+
+
+# Webhook event constants for safety devices
+WEBHOOK_NCO_CO_DETECTED = "NCO-co_detected"
+WEBHOOK_NSD_SMOKE = "NSD-smoke"
+WEBHOOK_NSD_HUSH = "NSD-hush"
+
+# CO detected sub_types (from Netatmo API doc)
+CO_SUBTYPE_OK = 0
+CO_SUBTYPE_PRE_ALARM = 1
+CO_SUBTYPE_ALARM = 2
+
+# Smoke sub_types
+SMOKE_SUBTYPE_CLEARED = 0
+SMOKE_SUBTYPE_DETECTED = 1
+
+
+class NetatmoCOAlarmBinarySensor(NetatmoModuleEntity, BinarySensorEntity):
+    """Representation of a Netatmo CO alarm binary sensor (NCO)."""
+
+    _attr_device_class = BinarySensorDeviceClass.CO
+    _attr_configuration_url = CONF_URL_SECURITY
+    _attr_has_entity_name = True
+    _attr_name = None
+    _attr_is_on: bool = False
+
+    def __init__(self, netatmo_device: NetatmoDevice) -> None:
+        """Initialize the CO alarm sensor."""
+        super().__init__(netatmo_device)
+        self._attr_unique_id = f"{self.device.entity_id}-co_alarm"
+        self._publishers.extend(
+            [
+                {
+                    "name": HOME,
+                    "home_id": self.home.entity_id,
+                    SIGNAL_NAME: f"{HOME}-{self.home.entity_id}",
+                },
+            ]
+        )
+
+    @callback
+    def async_update_callback(self) -> None:
+        """Update the entity's state."""
+        self._attr_available = self.device.reachable is not False
+
+    def handle_webhook_event(self, data: dict) -> None:
+        """Handle webhook events for CO alarm."""
+        push_type = data.get("push_type", "")
+        sub_type = data.get("sub_type")
+
+        if push_type != WEBHOOK_NCO_CO_DETECTED:
+            return
+        if data.get("device_id") != self.device.entity_id:
+            return
+
+        if sub_type in (CO_SUBTYPE_PRE_ALARM, CO_SUBTYPE_ALARM):
+            self._attr_is_on = True
+        elif sub_type == CO_SUBTYPE_OK:
+            self._attr_is_on = False
+
+        self.async_write_ha_state()
+
+
+class NetatmoSmokeAlarmBinarySensor(NetatmoModuleEntity, BinarySensorEntity):
+    """Representation of a Netatmo smoke alarm binary sensor (NSD)."""
+
+    _attr_device_class = BinarySensorDeviceClass.SMOKE
+    _attr_configuration_url = CONF_URL_SECURITY
+    _attr_has_entity_name = True
+    _attr_name = None
+    _attr_is_on: bool = False
+
+    def __init__(self, netatmo_device: NetatmoDevice) -> None:
+        """Initialize the smoke alarm sensor."""
+        super().__init__(netatmo_device)
+        self._attr_unique_id = f"{self.device.entity_id}-smoke_alarm"
+        self._publishers.extend(
+            [
+                {
+                    "name": HOME,
+                    "home_id": self.home.entity_id,
+                    SIGNAL_NAME: f"{HOME}-{self.home.entity_id}",
+                },
+            ]
+        )
+
+    @callback
+    def async_update_callback(self) -> None:
+        """Update the entity's state."""
+        self._attr_available = self.device.reachable is not False
+
+    def handle_webhook_event(self, data: dict) -> None:
+        """Handle webhook events for smoke alarm."""
+        push_type = data.get("push_type", "")
+        sub_type = data.get("sub_type")
+
+        if data.get("device_id") != self.device.entity_id:
+            return
+
+        if push_type == WEBHOOK_NSD_SMOKE:
+            if sub_type == SMOKE_SUBTYPE_DETECTED:
+                self._attr_is_on = True
+            elif sub_type == SMOKE_SUBTYPE_CLEARED:
+                self._attr_is_on = False
+            self.async_write_ha_state()
+        elif push_type == WEBHOOK_NSD_HUSH:
+            self._attr_is_on = False
+            self.async_write_ha_state()

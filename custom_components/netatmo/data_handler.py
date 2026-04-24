@@ -48,6 +48,8 @@ from .const import (
     NETATMO_CREATE_SELECT,
     NETATMO_CREATE_SENSOR,
     NETATMO_CREATE_SWITCH,
+    NETATMO_CREATE_CO_SENSOR,
+    NETATMO_CREATE_SMOKE_SENSOR,
     NETATMO_CREATE_WEATHER_BINARY_SENSOR,
     NETATMO_CREATE_WEATHER_SENSOR,
     PLATFORMS,
@@ -377,6 +379,32 @@ class NetatmoDataHandler:
             ],
         }
         for module in home.modules.values():
+            # Handle NCO and NSD which have no device_category in pyatmo
+            if module.device_type == NetatmoDeviceType.NCO:
+                async_dispatcher_send(
+                    self.hass,
+                    NETATMO_CREATE_CO_SENSOR,
+                    NetatmoDevice(
+                        self,
+                        module,
+                        home.entity_id,
+                        f"{HOME}-{home.entity_id}",
+                    ),
+                )
+                continue
+            if module.device_type == NetatmoDeviceType.NSD:
+                async_dispatcher_send(
+                    self.hass,
+                    NETATMO_CREATE_SMOKE_SENSOR,
+                    NetatmoDevice(
+                        self,
+                        module,
+                        home.entity_id,
+                        f"{HOME}-{home.entity_id}",
+                    ),
+                )
+                continue
+
             if not module.device_category:
                 continue
 
