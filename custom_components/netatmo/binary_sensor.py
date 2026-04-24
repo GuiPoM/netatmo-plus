@@ -473,7 +473,12 @@ class NetatmoCOAlarmBinarySensor(NetatmoModuleEntity, BinarySensorEntity):
     def async_update_callback(self) -> None:
         """Update the entity's state."""
         # NCO has no reliable reachability info — always available
-        pass
+        # Log device attributes once to help diagnose webhook field names
+        _LOGGER.debug(
+            "NCO device %s attributes: %s",
+            self.device.entity_id,
+            {k: v for k, v in vars(self.device).items() if not k.startswith("_")},
+        )
 
     def handle_webhook_event(self, data: dict) -> None:
         """Handle webhook events for CO alarm."""
@@ -482,7 +487,13 @@ class NetatmoCOAlarmBinarySensor(NetatmoModuleEntity, BinarySensorEntity):
 
         if push_type != WEBHOOK_NCO_CO_DETECTED:
             return
-        if data.get("device_id") != self.device.entity_id:
+
+        # Accept event if device_id or module_id matches
+        device_match = (
+            data.get("device_id") == self.device.entity_id
+            or data.get("module_id") == self.device.entity_id
+        )
+        if not device_match:
             return
 
         if sub_type in (CO_SUBTYPE_PRE_ALARM, CO_SUBTYPE_ALARM):
@@ -521,7 +532,11 @@ class NetatmoSmokeAlarmBinarySensor(NetatmoModuleEntity, BinarySensorEntity):
     def async_update_callback(self) -> None:
         """Update the entity's state."""
         # NSD has no reliable reachability info — always available
-        pass
+        _LOGGER.debug(
+            "NSD device %s attributes: %s",
+            self.device.entity_id,
+            {k: v for k, v in vars(self.device).items() if not k.startswith("_")},
+        )
 
     def handle_webhook_event(self, data: dict) -> None:
         """Handle webhook events for smoke alarm."""
