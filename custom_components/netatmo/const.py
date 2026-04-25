@@ -156,6 +156,11 @@ EVENT_TYPE_MODULE_CONNECT = "module_connect"
 EVENT_TYPE_MODULE_DISCONNECT = "module_disconnect"
 EVENT_TYPE_OFF = "off"
 EVENT_TYPE_ON = "on"
+# Safety events (NCO/NSD)
+EVENT_TYPE_CO_DETECTED = "co_detected"
+EVENT_TYPE_SMOKE = "smoke"
+EVENT_TYPE_HUSH = "hush"
+EVENT_TYPE_TAMPERED = "tampered"
 
 CAMERA_TRIGGERS = [
     EVENT_TYPE_CONNECTION,
@@ -205,6 +210,11 @@ EVENT_ID_MAP = {
     EVENT_TYPE_MODULE_DISCONNECT: "module_id",
     EVENT_TYPE_SET_POINT: "room_id",
     EVENT_TYPE_THERM_MODE: "home_id",
+    # Safety events
+    EVENT_TYPE_CO_DETECTED: "device_id",
+    EVENT_TYPE_SMOKE: "device_id",
+    EVENT_TYPE_HUSH: "device_id",
+    EVENT_TYPE_TAMPERED: "device_id",
 }
 
 MODE_LIGHT_AUTO = "auto"
