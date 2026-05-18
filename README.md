@@ -1,6 +1,6 @@
 # Netatmo Plus
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+[![Install via HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=GuiPoM&repository=netatmo-plus&category=integration)
 [![GitHub release](https://img.shields.io/github/release/GuiPoM/netatmo-plus.svg)](https://github.com/GuiPoM/netatmo-plus/releases)
 
 **A fork of the [official Home Assistant Netatmo integration](https://www.home-assistant.io/integrations/netatmo) with additional features pending upstream merge.**
@@ -92,25 +92,27 @@ These features are not yet in the official integration because:
 
 ## Installation
 
-### Via HACS (Recommended)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=GuiPoM&repository=netatmo-plus&category=integration)
 
-1. Open HACS in your Home Assistant
-2. Click on **Integrations**
-3. Click the three dots in the top right corner
-4. Select **Custom repositories**
-5. Add: `https://github.com/GuiPoM/netatmo-plus`
-6. Select category: **Integration**
-7. Click **Add**
-8. Search for **Netatmo Plus**
-9. Click **Download**
-10. Restart Home Assistant
+<details>
+<summary>Install via HACS (manual steps)</summary>
 
-### Manual Installation
+1. In HACS, go to **Integrations** → three-dot menu → **Custom repositories**
+2. Add `https://github.com/GuiPoM/netatmo-plus` — type **Integration**
+3. Search for **Netatmo Plus** and click **Download**
+4. Restart Home Assistant
+
+</details>
+
+<details>
+<summary>Manual installation</summary>
 
 1. Download the latest release from [Releases](https://github.com/GuiPoM/netatmo-plus/releases)
 2. Extract the `netatmo` folder from the zip
 3. Copy it to your `<config>/custom_components/` directory
 4. Restart Home Assistant
+
+</details>
 
 ---
 
