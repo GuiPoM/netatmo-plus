@@ -1,6 +1,5 @@
 # Netatmo Plus
 
-[![Install via HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=GuiPoM&repository=netatmo-plus&category=integration)
 [![GitHub release](https://img.shields.io/github/release/GuiPoM/netatmo-plus.svg)](https://github.com/GuiPoM/netatmo-plus/releases)
 
 **A fork of the [official Home Assistant Netatmo integration](https://www.home-assistant.io/integrations/netatmo) with additional features pending upstream merge.**
