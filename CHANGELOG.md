@@ -4,6 +4,13 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v1.4.4b1] — 2026-05-28 *(beta)*
+
+### Fixed
+- Siren entity unavailable after reboot — availability was incorrectly tied to webhook connection status instead of camera power state (`alim_status`). The webhook flag is `False` at startup and only becomes `True` after Netatmo's servers send a confirmation ping, causing the siren to appear permanently unavailable. The entity is now available as soon as the camera is reachable, consistent with the camera entity behaviour.
+
+---
+
 ## [v1.4.3] — 2026-05-07
 
 ### Fixed
