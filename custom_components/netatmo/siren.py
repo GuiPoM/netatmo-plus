@@ -73,8 +73,8 @@ class NetatmoCameraSiren(NetatmoModuleEntity, SirenEntity):
 
     @property
     def available(self) -> bool:
-        """If the webhook is not established, mark as unavailable."""
-        return bool(self.data_handler.webhook)
+        """Return True if the camera is powered (alim_status known)."""
+        return self.device.alim_status is not None
 
     def _get_web_auth(self) -> NetatmoWebSessionAuth | None:
         """Get the web session auth if configured."""
@@ -120,3 +120,4 @@ class NetatmoCameraSiren(NetatmoModuleEntity, SirenEntity):
     def async_update_callback(self) -> None:
         """Update the entity's state."""
         self._attr_is_on = self.device.siren_status == "sound"
+        self._attr_available = self.device.alim_status is not None

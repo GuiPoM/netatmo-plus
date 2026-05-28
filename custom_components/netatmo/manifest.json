@@ -14,5 +14,5 @@
   "issue_tracker": "https://github.com/GuiPoM/netatmo-plus/issues",
   "loggers": ["pyatmo"],
   "requirements": ["pyatmo@git+https://github.com/GuiPoM/pyatmo.git@feature/siren-app-endpoint"],
-  "version": "1.4.3"
+  "version": "1.4.4b1"
 }
