@@ -4,6 +4,32 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v1.4.4] — 2026-05-28
+
+### Fixed — Siren & Light (NOC camera)
+
+Both `siren` and `light` (floodlight) entities on the NOC camera suffered from
+the same conceptual bug: their `available` property was tied to
+`data_handler.webhook`, which is `False` at startup and only becomes `True`
+after Netatmo's servers send a webhook activation ping.
+
+**Root cause (historical):** when the `available` property was introduced in
+January 2021 (HA core #42791), `async_update_callback` relied exclusively on
+webhook events for state updates — so gating availability on the webhook was
+intentional and correct. During the pyatmo 7.0.1 refactor, `async_update_callback`
+was rewritten to read `device.floodlight` from the polled `homestatus` API, but
+the `available` property was never updated to match. The two drifted apart silently.
+
+**Fix:** availability is now based on `device.alim_status is not None` (camera
+power state, from the polled API) — consistent with `camera.py` and `siren.py`.
+The entity is available as soon as the camera is reachable, regardless of webhook
+registration state.
+
+This bug also exists in the upstream Home Assistant core Netatmo integration and
+will be reported there separately.
+
+---
+
 ## [v1.4.4b1] — 2026-05-28 *(beta)*
 
 ### Fixed
