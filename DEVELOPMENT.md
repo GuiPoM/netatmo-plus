@@ -5,9 +5,10 @@ Complete guide for developing and maintaining Netatmo Plus.
 ## Table of Contents
 
 - [Repository Structure](#repository-structure)
+- [Versioning](#versioning)
+- [Key Files — Ownership](#key-files--ownership)
+- [HA Version Upgrade Procedure](#ha-version-upgrade-procedure)
 - [Development Workflow](#development-workflow)
-- [Key Changes vs Official Integration](#key-changes-vs-official-integration)
-- [Regular Maintenance](#regular-maintenance)
 - [Creating Releases](#creating-releases)
 - [Upstream Contribution Plan](#upstream-contribution-plan)
 - [Quick Reference](#quick-reference)
@@ -16,194 +17,235 @@ Complete guide for developing and maintaining Netatmo Plus.
 
 ## Repository Structure
 
-Two repositories are involved:
+Three repositories are involved:
 
 1. **`GuiPoM/homeassistant_core`** (fork) — Development and testing
-   - Feature branches with full HA test framework
-   - All tests run here
+   - Branch `feature/netatmo-plus-validation` — all our changes + tests
+   - Rebased on HA release tags (e.g. `2026.6.0`)
+   - All tests run here via Docker devcontainer (`magical_keller`)
 
 2. **`GuiPoM/netatmo-plus`** (this repo) — Distribution via HACS
-   - Clean, single-commit history per release
+   - `main` branch — current release
    - Only the integration code, no test infrastructure
 
 3. **`GuiPoM/pyatmo`** (fork) — pyatmo library fork
-   - Branch `feature/siren-control` — clean PR for upstream (no workarounds)
-   - Branch `feature/siren-app-endpoint` — workaround used by this custom component
+   - Branch `feature/siren-optional-base-url` — PR #566 merged into upstream
+   - `manifest.json` still points to `feature/siren-app-endpoint` until pyatmo releases a version including the merged PR
 
-**Workflow:** Develop in `homeassistant_core` fork → Sync to `netatmo-plus` → Release
+**Workflow:** Rebase `feature/netatmo-plus-validation` on new HA tag → Run tests → Apply diffs to `netatmo-plus` → Release
+
+---
+
+## Versioning
+
+Version numbers follow the Home Assistant release the integration is based on:
+
+| Release type | Format | Example |
+|---|---|---|
+| Beta | `YYYY.M.Pb1` | `2026.6.0b1` |
+| Stable | `YYYY.M.P` | `2026.6.0` |
+| Patch on same HA base | `YYYY.M.P.N` | `2026.6.0.1` |
+
+`hacs.json` `homeassistant` field must match the base HA version.
+
+---
+
+## Key Files — Ownership
+
+**CRITICAL: never copy these files from upstream HA — they are ours:**
+
+| File | Why |
+|---|---|
+| `siren.py` | Our addition — siren platform for NOC |
+| `web_auth.py` | Our addition — Netatmo web session auth |
+| `light.py` | Contains our `alim_status` availability fix (see below) |
+| `manifest.json` | Our metadata (name, version, pyatmo fork requirement) |
+| `hacs.json` | Our HACS config |
+
+**Files we modify (apply upstream diffs on top of our changes, never overwrite):**
+
+| File | Our changes |
+|---|---|
+| `__init__.py` | `NetatmoWebSessionAuth` init + `async_config_entry_updated` |
+| `camera.py` | `monitoring` fix, `light_state` fix, extra attributes |
+| `climate.py` | Extra attributes (scheduled_temperature, open_window, etc.) |
+| `config_flow.py` | `siren_auth` options flow step |
+| `const.py` | `Platform.SIREN`, siren constants, `NETATMO_CREATE_CAMERA_SIREN` |
+| `data_handler.py` | `NETATMO_CREATE_CAMERA_SIREN` in camera category |
+| `strings.json` | `siren_auth` step strings |
+| `translations/en.json` | Same |
+
+**Files we copy verbatim from upstream (no our changes):**
+
+`api.py`, `application_credentials.py`, `binary_sensor.py`, `button.py`, `cover.py`,
+`device_trigger.py`, `diagnostics.py`, `entity.py`, `fan.py`, `helper.py`,
+`media_source.py`, `select.py`, `sensor.py`, `switch.py`, `webhook.py`
+
+### Known bug: `alim_status` availability fix
+
+`light.py` and `siren.py` override `available` to use `device.alim_status is not None`
+instead of `bool(data_handler.webhook)`. This fix was introduced because:
+- The upstream code gates availability on webhook registration, which is `False` at
+  startup and can take minutes to become `True`
+- `async_update_callback` reads `device.floodlight` / `device.siren_status` from the
+  **polled** `homestatus` API (since pyatmo 7.0.1 refactor), not from webhook events
+- Therefore webhook status is incorrect as an availability proxy
+
+This bug also exists in upstream HA core (tracked for future upstream PR).
+**Do not copy `light.py` or `siren.py` from upstream — the fix will be lost.**
+
+---
+
+## HA Version Upgrade Procedure
+
+When a new HA release is out (e.g. `2026.7.0`):
+
+### 1. Fetch new tag and check netatmo changes
+
+```powershell
+git -C "S:\git\perso\homeassistant_core" fetch upstream --tags
+
+# Check what changed in netatmo between old and new tag
+git -C "S:\git\perso\homeassistant_core" diff --name-only 2026.6.0..2026.7.0 -- homeassistant/components/netatmo/ tests/components/netatmo/
+```
+
+### 2. Rebase feature branch on new tag
+
+```powershell
+git -C "S:\git\perso\homeassistant_core" checkout feature/netatmo-plus-validation
+git -C "S:\git\perso\homeassistant_core" rebase 2026.7.0
+```
+
+Resolve conflicts if any (expected on our modified files).
+
+### 3. Run tests in devcontainer
+
+```powershell
+docker start magical_keller
+docker exec magical_keller bash -c "cd /workspaces/homeassistant_core && /home/vscode/.local/ha-venv/bin/python -m pytest tests/components/netatmo/test_climate.py tests/components/netatmo/test_camera.py tests/components/netatmo/test_config_flow.py -q 2>&1 | tail -20"
+```
+
+Update snapshots if needed:
+```powershell
+docker exec magical_keller bash -c "cd /workspaces/homeassistant_core && /home/vscode/.local/ha-venv/bin/python -m pytest tests/components/netatmo/test_climate.py --snapshot-update -q 2>&1 | tail -10"
+```
+
+### 4. Sync to netatmo-plus
+
+**Step A — Copy verbatim files** (safe, no our changes):
+```powershell
+$src = "S:\git\perso\homeassistant_core\homeassistant\components\netatmo"
+$dst = "S:\git\perso\netatmo-plus\custom_components\netatmo"
+$verbatim = @("api.py","application_credentials.py","binary_sensor.py","button.py",
+              "cover.py","device_trigger.py","diagnostics.py","entity.py","fan.py",
+              "helper.py","media_source.py","select.py","sensor.py","switch.py","webhook.py")
+foreach ($f in $verbatim) { Copy-Item (Join-Path $src $f) (Join-Path $dst $f) -Force }
+```
+
+**Step B — Apply upstream diffs on our modified files** using `git diff OLD_TAG..NEW_TAG`:
+```powershell
+git -C "S:\git\perso\homeassistant_core" diff 2026.6.0..2026.7.0 -- homeassistant/components/netatmo/__init__.py
+# etc. for each modified file — apply changes manually
+```
+
+**Step C — NEVER touch these files** (our additions/fixes):
+- `siren.py`, `web_auth.py`, `light.py`, `manifest.json`, `hacs.json`
+
+### 5. Update version and push
+
+```powershell
+# manifest.json: bump version to 2026.7.0b1
+# hacs.json: bump homeassistant to 2026.7.0
+git -C "S:\git\perso\netatmo-plus" add -A
+git -C "S:\git\perso\netatmo-plus" commit -m "chore: rebase on HA 2026.7.0 — bump to v2026.7.0b1"
+git -C "S:\git\perso\netatmo-plus" push origin main
+```
+
+### 6. Create beta release, validate, then stable
+
+```powershell
+$env:GH_HOST="github.com"
+gh release create v2026.7.0b1 --repo GuiPoM/netatmo-plus --title "v2026.7.0b1 (beta)" --prerelease --target main --notes "Based on HA 2026.7.0 — beta"
+# ... validate on real device ...
+gh release delete v2026.7.0b1 --repo GuiPoM/netatmo-plus --yes
+# bump manifest to 2026.7.0, commit, push
+gh release create v2026.7.0 --repo GuiPoM/netatmo-plus --title "v2026.7.0" --target main --notes-file "S:\temp\gh-body.md"
+```
 
 ---
 
 ## Development Workflow
 
-### Making Changes
+### Making changes
 
-All development happens in `GuiPoM/homeassistant_core`:
+All development in `GuiPoM/homeassistant_core` on `feature/netatmo-plus-validation`:
 
-```bash
-cd S:\git\perso\homeassistant_core
-
-# Create/checkout feature branch
-git checkout -b feature/netatmo-something
-
-# Make changes in homeassistant/components/netatmo/
-
-# Commit changes
-git commit -m "feat: Add ..."
+```powershell
+git -C "S:\git\perso\homeassistant_core" checkout feature/netatmo-plus-validation
+# edit files in homeassistant/components/netatmo/
+git -C "S:\git\perso\homeassistant_core" commit -m "feat: ..."
 ```
 
-### Syncing to netatmo-plus
+### Docker devcontainer
 
-After development and testing in the fork:
+- Container: `magical_keller`
+- HA core path inside container: `/workspaces/homeassistant_core`
+- Python venv: `/home/vscode/.local/ha-venv/bin/python`
 
-```bash
-# Copy changed files from fork to netatmo-plus
-cp homeassistant/components/netatmo/<changed_file>.py S:\git\perso\netatmo-plus\custom_components\netatmo\
-
-# In netatmo-plus, amend the release commit or create a new one
-cd S:\git\perso\netatmo-plus
-git add -A
-git commit -m "chore: Sync from homeassistant_core"
+If container fails to start (stale WSL socket):
+```powershell
+docker rm magical_keller
+docker run -d --name magical_keller `
+  -v "S:\git\perso\homeassistant_core:/workspaces/homeassistant_core" `
+  -v "vscode:/vscode" `
+  <image_name> sleep infinity
 ```
-
-### Squashing for a clean release
-
-Before releasing a new version, squash all commits into one:
-
-```bash
-cd S:\git\perso\netatmo-plus
-
-# Create a clean orphan branch
-git checkout --orphan release-v1.x.x
-git add -A
-git commit -m "Release: Netatmo Plus v1.x.x
-
-- Change 1
-- Change 2"
-
-# Replace main with the clean branch
-git branch -D main
-git branch -m main
-git push origin main --force
-```
-
----
-
-## Key Changes vs Official Integration
-
-### Files modified
-
-| File | Change |
-|---|---|
-| `manifest.json` | Name, codeowners, documentation URL, pyatmo fork requirement, version |
-| `const.py` | Added `Platform.SIREN`, siren constants (`CONF_SIREN_*`, `WEB_SESSION_AUTH`, etc.) |
-| `config_flow.py` | Added `siren_auth` step in `NetatmoOptionsFlowHandler` |
-| `__init__.py` | Initialize `NetatmoWebSessionAuth` from stored token in options |
-| `data_handler.py` | Added `NETATMO_CREATE_CAMERA_SIREN` signal for camera category |
-| `camera.py` | Fixed `monitoring` attribute: use `device.monitoring` instead of `_monitoring` |
-| `strings.json` | Added `siren_auth` step strings and `siren_login_failed` error |
-| `translations/en.json` | Same as strings.json for English |
-
-### Files added
-
-| File | Purpose |
-|---|---|
-| `siren.py` | Siren platform — creates `siren.*` entities for NOC cameras |
-| `web_auth.py` | Netatmo web session authentication for siren control |
-
-### pyatmo dependency
-
-`manifest.json` points to `GuiPoM/pyatmo@feature/siren-app-endpoint` which:
-- Contains the `SirenMixin` for NOC
-- Uses `app.netatmo.net` as the endpoint for siren control (workaround for OAuth2 limitation)
-
-When upstream pyatmo PR #554 is merged and released, update `manifest.json`:
-```json
-"requirements": ["pyatmo==X.Y.Z"]
-```
-
----
-
-## Regular Maintenance
-
-### Keeping up with official integration updates
-
-Periodically check for updates to the official Netatmo integration:
-
-```bash
-# In homeassistant_core fork, fetch upstream
-git fetch upstream
-git log upstream/dev -- homeassistant/components/netatmo/ --oneline | head -20
-```
-
-If there are new commits:
-
-1. Cherry-pick or merge relevant changes
-2. Resolve conflicts with our custom changes
-3. Sync to `netatmo-plus`
-4. Create a new release
-
-### Checking for pyatmo updates
-
-```bash
-$env:GH_HOST="github.com"
-gh api repos/jabesq-org/pyatmo/releases --jq '.[0] | {tag: .tag_name, date: .published_at}'
-```
-
-If a new pyatmo version is released that includes `SirenMixin` (PR #554 merged), update `manifest.json` to use the official version.
 
 ---
 
 ## Creating Releases
 
-1. **Squash all changes** into a single clean commit (see workflow above)
-
-2. **Update version** in `manifest.json` and `hacs.json`
-
-3. **Push to GitHub**:
-   ```bash
-   git push origin main --force
-   ```
-
-4. **Create a GitHub release**:
-   ```bash
-   $env:GH_HOST="github.com"
-   gh release create v1.0.0 --title "v1.0.0" --notes "Initial release" --repo GuiPoM/netatmo-plus
-   ```
-
-5. **Update HACS** — users will see the update automatically
+1. Ensure all changes are committed and pushed to `main`
+2. Update `manifest.json` version and `hacs.json` homeassistant field
+3. Update `CHANGELOG.md`
+4. Create GitHub release via `gh release create`
 
 ---
 
 ## Upstream Contribution Plan
 
-The goal is to eventually upstream all changes:
+| Feature | Status |
+|---|---|
+| `SirenMixin` in pyatmo | Merged in pyatmo v9.3.0 |
+| `base_url` override for siren | PR #566 merged into pyatmo `development` — awaiting release |
+| Siren platform in HA core | Pending pyatmo release with #566 |
+| `monitoring` fix in HA core | Not submitted yet |
+| `light.py` availability fix in HA core | Not submitted yet (bug exists upstream) |
+| Climate extra attributes | Not submitted yet |
+| Camera extra attributes | Not submitted yet |
 
-| Feature | Status | Blocker |
-|---|---|---|
-| `SirenMixin` in pyatmo | PR #554 submitted | Awaiting review by maintainers |
-| Siren platform in HA | Not submitted yet | Waiting for pyatmo PR merge + release |
-| `monitoring` fix in HA | Not submitted yet | Simple fix, can be submitted anytime |
+### Contacts
 
-### Contact
-
-- **pyatmo maintainer**: @jabesq on GitHub
-- **HA Netatmo codeowner**: @cgtobi on GitHub (also on HA Community forum)
+- **pyatmo maintainer**: @cgtobi on GitHub
+- **HA Netatmo codeowner**: @cgtobi on GitHub
 
 ---
 
 ## Quick Reference
 
-```bash
-# Check current netatmo-plus status
-git -C S:\git\perso\netatmo-plus log --oneline
+```powershell
+# Check netatmo changes between HA releases
+git -C "S:\git\perso\homeassistant_core" diff --name-only 2026.6.0..2026.7.0 -- homeassistant/components/netatmo/
 
-# Check pyatmo PR status
-$env:GH_HOST="github.com"; gh pr view 554 --repo jabesq-org/pyatmo
+# Run netatmo tests
+docker exec magical_keller bash -c "cd /workspaces/homeassistant_core && /home/vscode/.local/ha-venv/bin/python -m pytest tests/components/netatmo/test_climate.py tests/components/netatmo/test_camera.py tests/components/netatmo/test_config_flow.py -q 2>&1 | tail -20"
 
-# Push netatmo-plus update
-git -C S:\git\perso\netatmo-plus push origin main --force
+# Check latest pyatmo release
+$env:GH_HOST="github.com"; gh api repos/jabesq-org/pyatmo/releases --jq '.[0] | {tag: .tag_name, date: .published_at}'
 
-# Create release
-$env:GH_HOST="github.com"; gh release create v1.0.0 --repo GuiPoM/netatmo-plus --generate-notes
+# Create beta release
+$env:GH_HOST="github.com"; gh release create v2026.X.Yb1 --repo GuiPoM/netatmo-plus --prerelease --target main --title "v2026.X.Yb1 (beta)" --notes "..."
+
+# Create stable release
+$env:GH_HOST="github.com"; gh release create v2026.X.Y --repo GuiPoM/netatmo-plus --target main --title "v2026.X.Y" --notes-file "S:\temp\gh-body.md"
 ```
