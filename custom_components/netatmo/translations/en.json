@@ -1,16 +1,16 @@
 {
     "config": {
         "abort": {
-            "authorize_url_timeout": "Timeout generating authorize URL.",
+            "authorize_url_timeout": "Timeout while generating an authorization URL.",
             "missing_configuration": "The component is not configured. Please follow the documentation.",
             "no_url_available": "No URL available. For information about this error, [check the help section]({docs_url})",
             "oauth_error": "Received invalid token data.",
             "oauth_failed": "Error while obtaining access token.",
             "oauth_implementation_unavailable": "No OAuth2 implementations are currently available.",
-            "oauth_timeout": "Timeout resolving OAuth token.",
+            "oauth_timeout": "Timeout while resolving the OAuth token.",
             "oauth_unauthorized": "OAuth authorization error while obtaining access token.",
             "reauth_successful": "Re-authentication was successful",
-            "single_instance_allowed": "Already configured. Only a single configuration possible."
+            "single_instance_allowed": "Already configured. Only a single configuration is possible."
         },
         "create_entry": {
             "default": "Successfully authenticated"
@@ -161,18 +161,7 @@
         }
     },
     "options": {
-        "error": {
-            "siren_login_failed": "Login failed. Please check your Netatmo email and password."
-        },
         "step": {
-            "siren_auth": {
-                "title": "Netatmo Siren Control",
-                "description": "Configure Netatmo credentials for siren control.\nStatus: {status}\nCurrent email: {email}\n\nLeave both fields empty to remove siren credentials.",
-                "data": {
-                    "siren_email": "Netatmo email",
-                    "siren_password": "Netatmo password"
-                }
-            },
             "public_weather": {
                 "data": {
                     "area_name": "Name of the area",

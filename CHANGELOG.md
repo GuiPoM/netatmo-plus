@@ -4,6 +4,18 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v1.5.0b1] — 2026-06-04 *(beta)*
+
+### Changed
+- Based on Home Assistant 2026.6.0 core Netatmo integration
+
+### Upstream changes included (2026.6.0 vs 2026.5.0)
+- `select.py` — Fix AttributeError when webhook schedule_id is not in cache (HA core #171914)
+- `camera.py`, `const.py`, `webhook.py` — Replace duplicate constants with `homeassistant.const` imports (HA core #171953)
+- `helper.py` — Fix dataclass default (RUF009: `uuid4()` → `field(default_factory=uuid4)`) (HA core #172738)
+
+---
+
 ## [v1.4.4] — 2026-05-28
 
 ### Fixed — Siren & Light (NOC camera)

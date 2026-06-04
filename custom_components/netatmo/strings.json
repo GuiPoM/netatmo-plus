@@ -161,18 +161,7 @@
     }
   },
   "options": {
-    "error": {
-      "siren_login_failed": "Login failed. Please check your Netatmo email and password."
-    },
     "step": {
-      "siren_auth": {
-        "title": "Netatmo Siren Control",
-        "description": "Configure Netatmo credentials for siren control.\nStatus: {status}\nCurrent email: {email}\n\nLeave both fields empty to remove siren credentials.",
-        "data": {
-          "siren_email": "Netatmo email",
-          "siren_password": "Netatmo password"
-        }
-      },
       "public_weather": {
         "data": {
           "area_name": "Name of the area",
