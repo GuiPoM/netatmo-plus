@@ -4,6 +4,14 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v2026.6.0.1] — 2026-06-04
+
+### Fixed
+- Restored old `unique_id` format for camera and climate entities (`...-NOC` instead of `...-DeviceType.NOC`) — the upstream HA 2026.6.0 change broke entity registry and all automations referencing these entities
+- Restored `alim_status` availability fix for siren and light entities (regressed during 2026.6.0 sync)
+
+---
+
 ## [v2026.6.0] — 2026-06-04
 
 ### Changed
