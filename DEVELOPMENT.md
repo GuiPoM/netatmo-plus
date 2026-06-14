@@ -132,23 +132,33 @@ docker exec magical_keller bash -c "cd /workspaces/homeassistant_core && /home/v
 
 ### 4. Sync to netatmo-plus
 
-**Step A — Copy verbatim files** (safe, no our changes):
+**Generate the upstream diff and apply it** — never copy files manually.
+
 ```powershell
-$src = "S:\git\perso\homeassistant_core\homeassistant\components\netatmo"
-$dst = "S:\git\perso\netatmo-plus\custom_components\netatmo"
-$verbatim = @("api.py","application_credentials.py","binary_sensor.py","button.py",
-              "cover.py","device_trigger.py","diagnostics.py","entity.py","fan.py",
-              "helper.py","media_source.py","select.py","sensor.py","switch.py","webhook.py")
-foreach ($f in $verbatim) { Copy-Item (Join-Path $src $f) (Join-Path $dst $f) -Force }
+# Generate patch for all netatmo files changed between the two HA tags
+git -C "S:\git\perso\homeassistant_core" diff 2026.6.0..2026.7.0 `
+    -- homeassistant/components/netatmo/ `
+    > S:\temp\netatmo-upstream.patch
+
+# Review the patch — check which of our files are touched
+git -C "S:\git\perso\homeassistant_core" diff --name-only 2026.6.0..2026.7.0 `
+    -- homeassistant/components/netatmo/
+
+# Apply the patch to netatmo-plus
+# The patch paths are homeassistant/components/netatmo/* — strip 3 levels
+# to land in custom_components/netatmo/*
+git -C "S:\git\perso\netatmo-plus" apply `
+    --directory=custom_components/netatmo `
+    -p3 S:\temp\netatmo-upstream.patch
+
+Remove-Item "S:\temp\netatmo-upstream.patch"
 ```
 
-**Step B — Apply upstream diffs on our modified files** using `git diff OLD_TAG..NEW_TAG`:
-```powershell
-git -C "S:\git\perso\homeassistant_core" diff 2026.6.0..2026.7.0 -- homeassistant/components/netatmo/__init__.py
-# etc. for each modified file — apply changes manually
-```
+If `git apply` reports conflicts on our modified files (`__init__.py`, `camera.py`,
+`climate.py`, `config_flow.py`, `const.py`, `data_handler.py`), resolve them manually
+using the patch as reference — **never overwrite, always merge**.
 
-**Step C — NEVER touch these files** (our additions/fixes):
+**NEVER let git apply touch these files** (our additions/fixes) — reject those hunks:
 - `siren.py`, `web_auth.py`, `light.py`, `manifest.json`, `hacs.json`
 
 ### 5. Update version and push
