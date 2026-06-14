@@ -4,6 +4,21 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v2026.6.0.2] — 2026-06-04
+
+### Fixed
+- Re-aligned `camera.py` and `climate.py` with upstream HA 2026.6.0 — entity
+  unique_ids now use `device_type_to_str` (`...-DeviceType.NOC`) as in the
+  official integration.
+
+> ⚠️ **If you installed v2026.6.0 or v2026.6.0.1**, your camera (NOC, NACamera,
+> NDB, NPC) and thermostat/valve (NATherm1, NRV, OTM, NAC, BNS) entities may
+> have been duplicated due to an error in the upgrade process. Please delete the
+> orphaned entities and rename the new ones to restore their original `entity_id`
+> if needed.
+
+---
+
 ## [v2026.6.0.1] — 2026-06-04
 
 ### Fixed

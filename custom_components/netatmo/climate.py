@@ -62,6 +62,7 @@ from .const import (
 )
 from .data_handler import HOME, SIGNAL_NAME, NetatmoConfigEntry, NetatmoRoom
 from .entity import NetatmoRoomEntity
+from .helper import device_type_to_str
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -228,7 +229,7 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
             self._attr_hvac_modes.append(HVACMode.OFF)
 
         self._attr_unique_id = (
-            f"{self.device.entity_id}-{self.device_type}"
+            f"{self.device.entity_id}-{device_type_to_str(self.device_type)}"
         )
 
     async def async_added_to_hass(self) -> None:
