@@ -42,6 +42,7 @@ NETATMO_LOGIN_URL = "https://auth.netatmo.com/access/postlogin"
 NETATMO_SETSTATE_URL = "https://app.netatmo.net/api/setstate"
 
 API_SCOPES_EXCLUDED_FROM_CLOUD = [
+    "access_camerapro",
     "access_doorbell",
     "read_doorbell",
     "read_mhs1",

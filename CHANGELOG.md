@@ -4,6 +4,17 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v2026.7.0b1] — 2026-07-01 *(beta)*
+
+### Changed
+- Based on Home Assistant 2026.7.0 core Netatmo integration
+
+### Upstream changes included (2026.7.0 vs 2026.6.0)
+- `camera.py`, `climate.py`, `config_flow.py`, `light.py` and all platform files: add `@override` decorators on overridden methods
+- `const.py`: add `"access_camerapro"` to `API_SCOPES_EXCLUDED_FROM_CLOUD`
+
+---
+
 ## [v2026.6.0.2] — 2026-06-04
 
 ### Fixed
