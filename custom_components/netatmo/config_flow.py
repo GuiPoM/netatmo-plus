@@ -8,7 +8,7 @@ import uuid
 import aiohttp
 import voluptuous as vol
 
-from homeassistant.config_entries import SOURCE_REAUTH, ConfigFlowResult, OptionsFlow
+from homeassistant.config_entries import ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_SHOW_ON_MAP, CONF_UUID
 from homeassistant.core import callback
 from homeassistant.helpers import (
@@ -32,7 +32,7 @@ from .const import (
     CONF_WEATHER_AREAS,
     DOMAIN,
 )
-from .data_handler import NetatmoConfigEntry
+from .coordinator import NetatmoConfigEntry
 from .web_auth import NetatmoWebSessionAuth
 
 _LOGGER = logging.getLogger(__name__)
@@ -71,10 +71,6 @@ class NetatmoFlowHandler(
     async def async_step_user(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Handle a flow start."""
         await self.async_set_unique_id(DOMAIN)
-
-        if self.source != SOURCE_REAUTH and self._async_current_entries():
-            return self.async_abort(reason="single_instance_allowed")
-
         return await super().async_step_user(user_input)
 
     async def async_step_reauth(

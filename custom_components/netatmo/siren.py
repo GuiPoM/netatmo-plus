@@ -18,7 +18,7 @@ from .const import (
     CONF_URL_SECURITY,
     NETATMO_CREATE_CAMERA_SIREN,
 )
-from .data_handler import HOME, SIGNAL_NAME, NetatmoDevice
+from .coordinator import HOME, SIGNAL_NAME, NetatmoDevice
 from .entity import NetatmoModuleEntity
 from .web_auth import NetatmoWebSessionAuth
 
@@ -120,4 +120,3 @@ class NetatmoCameraSiren(NetatmoModuleEntity, SirenEntity):
     def async_update_callback(self) -> None:
         """Update the entity's state."""
         self._attr_is_on = self.device.siren_status == "sound"
-        self._attr_available = self.device.alim_status is not None

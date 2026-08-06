@@ -19,10 +19,12 @@ from .const import (
     NETATMO_CREATE_CAMERA_LIGHT,
     NETATMO_CREATE_LIGHT,
 )
-from .data_handler import HOME, SIGNAL_NAME, NetatmoConfigEntry, NetatmoDevice
-from .entity import NetatmoModuleEntity
+from .coordinator import HOME, SIGNAL_NAME, NetatmoConfigEntry, NetatmoDevice
+from .entity import NetatmoModuleEntity, NetatmoReachabilityEntity
 
 _LOGGER = logging.getLogger(__name__)
+
+PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
@@ -74,7 +76,7 @@ class NetatmoCameraLight(NetatmoModuleEntity, LightEntity):
     def __init__(self, netatmo_device: NetatmoDevice) -> None:
         """Initialize a Netatmo Presence camera light."""
         super().__init__(netatmo_device)
-        self._attr_unique_id = f"{self.device.entity_id}-light"
+        self._attr_unique_id = f"{self.device.entity_id}-light"  # pylint: disable=home-assistant-entity-unique-id-redundant-platform
 
         self._signal_name = f"{HOME}-{self.home.entity_id}"
         self._publishers.extend(
@@ -129,7 +131,7 @@ class NetatmoCameraLight(NetatmoModuleEntity, LightEntity):
         from the polled homestatus API — making the webhook flag incorrect as an
         availability proxy. Fixed to match camera.py and siren.py.
         """
-        return self.device.alim_status is not None
+        return super().available and self.device.alim_status is not None
 
     @override
     async def async_turn_on(self, **kwargs: Any) -> None:
@@ -149,9 +151,10 @@ class NetatmoCameraLight(NetatmoModuleEntity, LightEntity):
         """Update the entity's state."""
         self._attr_is_on = bool(self.device.floodlight == "on")
         self._attr_available = self.device.alim_status is not None
+        self.async_write_ha_state()
 
 
-class NetatmoLight(NetatmoModuleEntity, LightEntity):
+class NetatmoLight(NetatmoReachabilityEntity, LightEntity):
     """Representation of a dimmable light by Legrand/BTicino."""
 
     _attr_name = None
@@ -162,7 +165,7 @@ class NetatmoLight(NetatmoModuleEntity, LightEntity):
     def __init__(self, netatmo_device: NetatmoDevice) -> None:
         """Initialize a Netatmo light."""
         super().__init__(netatmo_device)
-        self._attr_unique_id = f"{self.device.entity_id}-light"
+        self._attr_unique_id = f"{self.device.entity_id}-light"  # pylint: disable=home-assistant-entity-unique-id-redundant-platform
 
         if self.device.brightness is not None:
             self._attr_color_mode = ColorMode.BRIGHTNESS
@@ -206,10 +209,12 @@ class NetatmoLight(NetatmoModuleEntity, LightEntity):
     @override
     def async_update_callback(self) -> None:
         """Update the entity's state."""
-        self._attr_is_on = self.device.on is True
+        if self.device.reachable is not False:
+            self._attr_is_on = self.device.on is True
 
-        if (brightness := self.device.brightness) is not None:
-            # Netatmo uses a range of [0, 100] to control brightness
-            self._attr_brightness = round(brightness * 2.55)
-        else:
-            self._attr_brightness = None
+            if (brightness := self.device.brightness) is not None:
+                # Netatmo uses a range of [0, 100] to control brightness
+                self._attr_brightness = round(brightness * 2.55)
+            else:
+                self._attr_brightness = None
+        self.async_write_ha_state()

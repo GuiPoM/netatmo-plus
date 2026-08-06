@@ -4,6 +4,22 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v2026.8.0b1] — 2026-08-06 *(beta)*
+
+### Changed
+- Based on Home Assistant 2026.8.0 core Netatmo integration
+- pyatmo requirement updated to official `9.5.0` (no longer using fork)
+
+### Upstream changes included (2026.8.0 vs 2026.7.0)
+- `data_handler.py` renamed to `coordinator.py`
+- `hass.data[DOMAIN]` patterns migrated to `entry.runtime_data` attributes
+- New `services.py` — services extracted from `__init__.py`
+- New `quality_scale.yaml` — integration quality scale bronze
+- `entity.py` — new `NetatmoReachabilityEntity` base class + `is_signal_available()`
+- Various bug fixes and code quality improvements
+
+---
+
 ## [v2026.7.0] — 2026-07-01
 
 ### Changed
