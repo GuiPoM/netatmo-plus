@@ -4,6 +4,24 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v2026.9.0b1] — 2026-09-02 *(beta)*
+
+### Changed
+- Based on Home Assistant 2026.9.0 core Netatmo integration
+- pyatmo updated to `9.9.0`
+
+### Upstream changes included (2026.9.0 vs 2026.8.0)
+- New `device.py` — Netatmo home and device hierarchy management
+- `coordinator.py` — child devices, home device tracking, transient error tolerance (`UNAVAILABLE_AFTER_ERRORS=3`)
+- `entity.py` — improvements for device registry integration
+- `__init__.py` — home device removal logic reworked
+- `light.py` — optimistic brightness update on `async_turn_on`
+- `strings.json` — removed shared OAuth2 abort keys (now handled centrally), added `issues.deprecated_webhook_service`
+- Fix: undefined `DeviceEntry` name in device removal (#180089)
+- Fix: Netatmo entities going unavailable on transient API errors (#178129)
+
+---
+
 ## [v2026.8.0b1] — 2026-08-06 *(beta)*
 
 ### Changed

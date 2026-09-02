@@ -1,14 +1,7 @@
 {
     "config": {
         "abort": {
-            "authorize_url_timeout": "Timeout while generating an authorization URL.",
             "missing_configuration": "The component is not configured. Please follow the documentation.",
-            "no_url_available": "No URL available. For information about this error, [check the help section]({docs_url})",
-            "oauth_error": "Received invalid token data.",
-            "oauth_failed": "Error while obtaining access token.",
-            "oauth_implementation_unavailable": "No OAuth2 implementations are currently available.",
-            "oauth_timeout": "Timeout while resolving the OAuth token.",
-            "oauth_unauthorized": "OAuth authorization error while obtaining access token.",
             "reauth_successful": "Re-authentication was successful",
             "single_instance_allowed": "Already configured. Only a single configuration is possible."
         },
@@ -81,6 +74,11 @@
                         }
                     }
                 }
+            }
+        },
+        "select": {
+            "schedule": {
+                "name": "Schedule"
             }
         },
         "sensor": {
@@ -156,8 +154,17 @@
         }
     },
     "exceptions": {
+        "entry_not_loaded": {
+            "message": "The Netatmo integration is not loaded. Please set it up before calling this action."
+        },
         "oauth2_implementation_unavailable": {
             "message": "OAuth2 implementation unavailable, will retry"
+        }
+    },
+    "issues": {
+        "deprecated_webhook_service": {
+            "description": "The `register_webhook` and `unregister_webhook` actions are deprecated and will be removed in a future release. Netatmo manages the webhook automatically, so these actions are no longer needed. Please remove them from your automations and scripts.",
+            "title": "Netatmo webhook actions are deprecated"
         }
     },
     "options": {
@@ -216,7 +223,7 @@
             "name": "Clear temperature setting"
         },
         "register_webhook": {
-            "description": "Registers the webhook to the Netatmo backend.",
+            "description": "Registers the webhook to the Netatmo backend. Deprecated: the webhook is managed automatically and this action will be removed in 2027.2.0.",
             "name": "Register webhook"
         },
         "set_camera_light": {
@@ -302,7 +309,7 @@
             "name": "Set temperature with time period"
         },
         "unregister_webhook": {
-            "description": "Unregisters the webhook from the Netatmo backend.",
+            "description": "Unregisters the webhook from the Netatmo backend. Deprecated: the webhook is managed automatically and this action will be removed in 2027.2.0.",
             "name": "Unregister webhook"
         }
     }
