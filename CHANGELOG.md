@@ -4,7 +4,7 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
-## [v2026.9.0b1] — 2026-09-02 *(beta)*
+## [v2026.9.0] — 2026-09-02
 
 ### Changed
 - Based on Home Assistant 2026.9.0 core Netatmo integration

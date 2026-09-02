@@ -14,5 +14,5 @@
   "issue_tracker": "https://github.com/GuiPoM/netatmo-plus/issues",
   "loggers": ["pyatmo"],
   "requirements": ["pyatmo==9.9.0"],
-  "version": "2026.9.0b1"
+  "version": "2026.9.0"
 }
