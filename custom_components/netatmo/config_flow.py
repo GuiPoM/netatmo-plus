@@ -151,7 +151,7 @@ class NetatmoOptionsFlowHandler(OptionsFlow):
         has_token = bool(self.options.get(CONF_SIREN_TOKEN))
 
         description_placeholders = {
-            "status": "✓ Configured" if has_token else "Not configured",
+            "status": "Configured" if has_token else "Not configured",
             "email": current_email if current_email else "-",
         }
 

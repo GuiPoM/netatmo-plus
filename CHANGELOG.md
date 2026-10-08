@@ -4,6 +4,14 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v2026.10.0.1] — 2026-10-08
+
+### Fixed
+- `config_flow.py` — fix garbled status placeholder in siren_auth step description
+- `strings.json` — add missing `options.error.siren_login_failed` translation key
+
+---
+
 ## [v2026.10.0] — 2026-10-01
 
 ### Changed
