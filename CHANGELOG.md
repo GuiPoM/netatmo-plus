@@ -4,6 +4,22 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v2026.10.0] — 2026-10-01
+
+### Changed
+- Based on Home Assistant 2026.10.0 core Netatmo integration
+- pyatmo remains at `9.9.0`
+
+### Upstream changes included (2026.10.0 vs 2026.9.0)
+- `config_flow.py` — OAuth2 abort reasons handled centrally, `single_instance_allowed` handled centrally
+- `coordinator.py` — disconnect public weather signal on unload, drop redundant token error handling
+- `camera.py` — probatio integration
+- `climate.py` — probatio integration
+- `sensor.py` — probatio integration
+- Fix: Netatmo schedule select depending on room features order (#184179)
+
+---
+
 ## [v2026.9.0] — 2026-09-02
 
 ### Changed
