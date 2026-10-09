@@ -2,8 +2,7 @@
     "config": {
         "abort": {
             "missing_configuration": "The component is not configured. Please follow the documentation.",
-            "reauth_successful": "Re-authentication was successful",
-            "single_instance_allowed": "Already configured. Only a single configuration is possible."
+            "reauth_successful": "Re-authentication was successful"
         },
         "create_entry": {
             "default": "Successfully authenticated"
@@ -156,9 +155,6 @@
     "exceptions": {
         "entry_not_loaded": {
             "message": "The Netatmo integration is not loaded. Please set it up before calling this action."
-        },
-        "oauth2_implementation_unavailable": {
-            "message": "OAuth2 implementation unavailable, will retry"
         }
     },
     "issues": {
@@ -168,6 +164,9 @@
         }
     },
     "options": {
+        "error": {
+            "siren_login_failed": "Failed to authenticate with Netatmo. Please check your email and password."
+        },
         "step": {
             "public_weather": {
                 "data": {
