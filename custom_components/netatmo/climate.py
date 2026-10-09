@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 import logging
+from time import monotonic
 from typing import Any, cast, override
 
 import probatio
@@ -58,7 +59,7 @@ from .const import (
     SERVICE_SET_TEMPERATURE_WITH_END_DATETIME,
     SERVICE_SET_TEMPERATURE_WITH_TIME_PERIOD,
 )
-from .coordinator import HOME, SIGNAL_NAME, NetatmoConfigEntry, NetatmoRoom
+from .coordinator import ACCOUNT, HOME, SIGNAL_NAME, NetatmoConfigEntry, NetatmoRoom
 from .entity import NetatmoRoomEntity
 from .helper import device_type_to_str
 
@@ -120,6 +121,9 @@ HVAC_MAP_NETATMO = {
 CURRENT_HVAC_MAP_NETATMO = {True: HVACAction.HEATING, False: HVACAction.IDLE}
 
 DEFAULT_MAX_TEMP = 30
+
+ATTR_COMMAND_PENDING = "command_pending"
+PENDING_TIMEOUT = 180  # seconds; the flag clears regardless once this elapses
 
 NA_THERM = DeviceType.NATherm1
 NA_VALVE = DeviceType.NRV
@@ -206,6 +210,8 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
     _away_temperature: float | None = None
     _hg_temperature: float | None = None
     _boilerstatus: bool | None = None
+    _pending_temp: float | None = None
+    _pending_since: float | None = None
 
     def __init__(self, room: NetatmoRoom) -> None:
         """Initialize the sensor."""
@@ -359,6 +365,47 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
         elif hvac_mode == HVACMode.HEAT:
             await self.async_set_preset_mode(PRESET_BOOST)
 
+    def _home_preset(self) -> str:
+        """Home preset the room falls back to once a local override is cleared."""
+        return NETATMO_MAP_PRESET.get(
+            getattr(self.home, "therm_mode", None), PRESET_SCHEDULE
+        )
+
+    def _mark_pending(self, temp: float | None) -> None:
+        """Mark that a command is pending confirmation from the next poll."""
+        self._pending_temp = temp
+        self._pending_since = monotonic()
+        self._attr_extra_state_attributes[ATTR_COMMAND_PENDING] = True
+
+    def _refresh_pending(self) -> None:
+        """Clear the pending flag once polling confirms the command, or it times out."""
+        if self._pending_since is not None:
+            target = self._attr_target_temperature
+            confirmed = self._pending_temp is None or (
+                target is not None and abs(target - self._pending_temp) < 0.05
+            )
+            if confirmed or monotonic() - self._pending_since > PENDING_TIMEOUT:
+                self._pending_since = None
+        self._attr_extra_state_attributes[ATTR_COMMAND_PENDING] = (
+            self._pending_since is not None
+        )
+
+    def _apply_optimistic(self, preset: str) -> None:
+        """Immediately reflect the expected result of a command on the entity."""
+        self._attr_preset_mode = preset
+        self._attr_hvac_mode = HVAC_MAP_NETATMO.get(preset, HVACMode.AUTO)
+        if preset == PRESET_BOOST:
+            temp = DEFAULT_MAX_TEMP
+        elif preset == PRESET_FROST_GUARD:
+            temp = self._hg_temperature
+        elif preset == PRESET_AWAY:
+            temp = self._away_temperature
+        else:
+            temp = self._get_scheduled_setpoint()
+        if temp is not None:
+            self._mark_pending(temp)
+            self._attr_target_temperature = temp
+
     @override
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""
@@ -370,6 +417,7 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
             await self.device.async_therm_set(
                 STATE_NETATMO_HOME,
             )
+            self._apply_optimistic(self._home_preset())
         elif (
             preset_mode in (PRESET_BOOST, STATE_NETATMO_MAX)
             and self.device_type == NA_VALVE
@@ -378,15 +426,22 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
                 STATE_NETATMO_MANUAL,
                 DEFAULT_MAX_TEMP,
             )
+            self._apply_optimistic(PRESET_BOOST)
         elif (
             preset_mode in (PRESET_BOOST, STATE_NETATMO_MAX)
             and self._attr_hvac_mode == HVACMode.HEAT
         ):
             await self.device.async_therm_set(STATE_NETATMO_HOME)
+            self._apply_optimistic(self._home_preset())
         elif preset_mode in (PRESET_BOOST, STATE_NETATMO_MAX):
             await self.device.async_therm_set(PRESET_MAP_NETATMO[preset_mode])
+            self._apply_optimistic(PRESET_BOOST)
         elif preset_mode in THERM_MODES:
             await self.device.home.async_set_thermmode(PRESET_MAP_NETATMO[preset_mode])
+            self._apply_optimistic(preset_mode)
+            # Other rooms will pick up the change on the next polling cycle
+            self.data_handler.async_force_update(self._signal_name)
+            self.data_handler.async_force_update(ACCOUNT)
         else:
             _LOGGER.error("Preset mode '%s' not available", preset_mode)
 
@@ -398,6 +453,9 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
         await self.device.async_therm_set(
             STATE_NETATMO_MANUAL, min(kwargs[ATTR_TEMPERATURE], DEFAULT_MAX_TEMP)
         )
+        self._attr_target_temperature = min(kwargs[ATTR_TEMPERATURE], DEFAULT_MAX_TEMP)
+        self._attr_hvac_mode = HVACMode.HEAT
+        self._mark_pending(self._attr_target_temperature)
         self.async_write_ha_state()
 
     @override
@@ -436,8 +494,9 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
 
         self._connected = True
 
-        self._away_temperature = self.home.get_away_temp()
-        self._hg_temperature = self.home.get_hg_temp()
+        _schedule = self.home.get_selected_schedule()
+        self._away_temperature = getattr(_schedule, "away_temp", None)
+        self._hg_temperature = getattr(_schedule, "hg_temp", None)
         self._attr_current_temperature = self.device.therm_measured_temperature
         self._attr_target_temperature = self.device.therm_setpoint_temperature
 
@@ -446,8 +505,27 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
         if therm_setpoint_mode is None:
             therm_setpoint_mode = STATE_NETATMO_SCHEDULE
 
-        self._attr_preset_mode = NETATMO_MAP_PRESET[therm_setpoint_mode]
+        # At room level, "home" (or "schedule" as a fallback) only means
+        # "I'm following the home's setting": it doesn't distinguish whether
+        # that setting is actually schedule, away, or frost_guard (those are
+        # home-wide modes, not room-wide). Disambiguate by reading the home's
+        # real therm_mode, refreshed on every regular poll — this way the
+        # preset that was just set doesn't get overwritten back to "schedule"
+        # on the next update cycle.
+        if therm_setpoint_mode in (STATE_NETATMO_HOME, STATE_NETATMO_SCHEDULE):
+            home_therm_mode = getattr(self.home, "therm_mode", None)
+            if home_therm_mode is not None:
+                therm_setpoint_mode = home_therm_mode
+
+        self._attr_preset_mode = NETATMO_MAP_PRESET.get(therm_setpoint_mode, PRESET_SCHEDULE)
         self._attr_hvac_mode = HVAC_MAP_NETATMO[self._attr_preset_mode]
+        # Valve Boost is implemented as a manual setpoint at DEFAULT_MAX_TEMP
+        if (
+            self._attr_preset_mode == STATE_NETATMO_MANUAL
+            and self._attr_target_temperature == DEFAULT_MAX_TEMP
+        ):
+            self._attr_preset_mode = PRESET_BOOST
+            self._attr_hvac_mode = HVACMode.HEAT
         self._away = self._attr_hvac_mode == HVAC_MAP_NETATMO[STATE_NETATMO_AWAY]
 
         selected_schedule = self.home.get_selected_schedule()
@@ -500,6 +578,7 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
                         self._boilerstatus = module.boiler_status
                         break
 
+        self._refresh_pending()
         self.async_write_ha_state()
 
     def _get_scheduled_setpoint(self) -> float | None:
