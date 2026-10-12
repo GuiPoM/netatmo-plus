@@ -129,7 +129,7 @@ class NetatmoWebSessionAuth:
             self._token = fresh.token
             _LOGGER.debug("Netatmo siren re-login successful")
             return True
-        except aiohttp.ClientError as err:
+        except (aiohttp.ClientError, TimeoutError) as err:
             _LOGGER.error("Netatmo siren re-login failed: %s", err)
             return False
 
@@ -156,39 +156,44 @@ class NetatmoWebSessionAuth:
             }
         }
 
-        async with self._websession.post(
-            NETATMO_SETSTATE_URL,
-            json=payload,
-            headers={"Authorization": f"Bearer {self._token}"},
-        ) as resp:
-            data = await resp.json()
-            if data.get("status") == "ok":
-                return True
+        try:
+            async with self._websession.post(
+                NETATMO_SETSTATE_URL,
+                json=payload,
+                headers={"Authorization": f"Bearer {self._token}"},
+            ) as resp:
+                data = await resp.json()
+                if data.get("status") == "ok":
+                    return True
 
-            error = data.get("error", {})
-            _LOGGER.debug("Siren setstate response: %s", error)
+                error = data.get("error", {})
+                _LOGGER.debug("Siren setstate response: %s", error)
 
-            # Token expired — re-login once and retry
-            if error.get("code") in (2, 3, 13):
-                self._token = None
-                if await self._async_relogin():
-                    # Retry with new token
-                    async with self._websession.post(
-                        NETATMO_SETSTATE_URL,
-                        json=payload,
-                        headers={"Authorization": f"Bearer {self._token}"},
-                    ) as retry_resp:
-                        retry_data = await retry_resp.json()
-                        if retry_data.get("status") == "ok":
-                            return True
-                        _LOGGER.error(
-                            "Siren setstate failed after re-login: %s",
-                            retry_data.get("error", retry_data),
-                        )
+                # Token expired — re-login once and retry
+                if error.get("code") in (2, 3, 13):
+                    self._token = None
+                    if await self._async_relogin():
+                        try:
+                            async with self._websession.post(
+                                NETATMO_SETSTATE_URL,
+                                json=payload,
+                                headers={"Authorization": f"Bearer {self._token}"},
+                            ) as retry_resp:
+                                retry_data = await retry_resp.json()
+                                if retry_data.get("status") == "ok":
+                                    return True
+                                _LOGGER.error(
+                                    "Siren setstate failed after re-login: %s",
+                                    retry_data.get("error", retry_data),
+                                )
+                        except (aiohttp.ClientError, TimeoutError) as err:
+                            _LOGGER.error("Siren setstate retry failed: %s", err)
                         return False
 
-            _LOGGER.error("Siren setstate failed: %s", error)
-            return False
+                _LOGGER.error("Siren setstate failed: %s", error)
+        except (aiohttp.ClientError, TimeoutError) as err:
+            _LOGGER.error("Siren setstate request failed: %s", err)
+        return False
 
     async def async_siren_on(self, home_id: str, module_id: str) -> bool:
         """Trigger siren."""

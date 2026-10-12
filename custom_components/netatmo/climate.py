@@ -1,6 +1,7 @@
 """Support for Netatmo Smart thermostats."""
 
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import logging
 from typing import Any, cast, override
 
@@ -464,12 +465,18 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
         self._attr_extra_state_attributes[ATTR_SCHEDULED_ZONE_NAME] = (
             self._get_scheduled_zone_name()
         )
-        self._attr_extra_state_attributes[ATTR_AWAY_TEMPERATURE] = getattr(
-            selected_schedule, "away_temp", None
-        )
-        self._attr_extra_state_attributes[ATTR_FROST_GUARD_TEMPERATURE] = getattr(
-            selected_schedule, "hg_temp", None
-        )
+        if selected_schedule is not None:
+            self._attr_extra_state_attributes[ATTR_AWAY_TEMPERATURE] = getattr(
+                selected_schedule, "away_temp", None
+            )
+            self._attr_extra_state_attributes[ATTR_FROST_GUARD_TEMPERATURE] = getattr(
+                selected_schedule, "hg_temp", None
+            )
+        else:
+            self._attr_extra_state_attributes[ATTR_AWAY_TEMPERATURE] = None
+            self._attr_extra_state_attributes[ATTR_FROST_GUARD_TEMPERATURE] = None
+            self._attr_extra_state_attributes[ATTR_SCHEDULED_TEMPERATURE] = None
+            self._attr_extra_state_attributes[ATTR_SCHEDULED_ZONE_NAME] = None
         self._attr_extra_state_attributes[ATTR_OPEN_WINDOW] = getattr(
             self.device, "open_window", None
         )
@@ -478,6 +485,7 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
         )
 
         # setpoint_end_time — convert Unix timestamp to ISO datetime string
+        # Netatmo returns 0 for rooms without an active override — treat as absent
         end_time = getattr(self.device, "therm_setpoint_end_time", None)
         self._attr_extra_state_attributes[ATTR_SETPOINT_END_TIME] = (
             dt_util.utc_from_timestamp(end_time).isoformat() if end_time else None
@@ -527,12 +535,21 @@ class NetatmoThermostat(NetatmoRoomEntity, ClimateEntity):
         if schedule is None or not schedule.timetable:
             return None
 
-        now = datetime.now(timezone.utc)
+        # Netatmo m_offset is in local home time — use home timezone if available
+        home_tz: timezone | ZoneInfo = timezone.utc
+        try:
+            tz_name = getattr(self.home, "timezone", None)
+            if tz_name:
+                home_tz = ZoneInfo(tz_name)
+        except ZoneInfoNotFoundError:
+            pass
+
+        now = datetime.now(home_tz)
         minute_of_week = now.weekday() * 1440 + now.hour * 60 + now.minute
 
         active_zone_id = schedule.timetable[0].zone_id
         for entry in schedule.timetable:
-            if entry.m_offset <= minute_of_week:
+            if entry.m_offset is not None and entry.m_offset <= minute_of_week:
                 active_zone_id = entry.zone_id
             else:
                 break

@@ -4,6 +4,16 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v2026.10.0.3] — 2026-10-12
+
+### Fixed
+- `diagnostics.py` — redact siren credentials (`siren_email`, `siren_password`, `siren_token`) from diagnostics output
+- `config_flow.py` — `siren_auth` step is now independent from `public_weather_areas` (each accessible separately); password field marked as secret; `TimeoutError` handled alongside `ClientError`; password cleared when credentials are cleared
+- `web_auth.py` — `TimeoutError` and `ClientError` properly caught in siren HTTP calls and re-login
+- `climate.py` — timestamp `0` treated as absent for `setpoint_end_time`; schedule attributes cleared when no schedule selected; timezone-aware timetable offset computation using home timezone
+
+---
+
 ## [v2026.10.0.2] — 2026-10-12
 
 ### Fixed

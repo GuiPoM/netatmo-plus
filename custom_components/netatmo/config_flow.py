@@ -7,7 +7,6 @@ import uuid
 
 import aiohttp
 import probatio
-import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_SHOW_ON_MAP, CONF_UUID
@@ -111,7 +110,7 @@ class NetatmoOptionsFlowHandler(OptionsFlow):
 
     async def async_step_init(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Manage the Netatmo options."""
-        return await self.async_step_siren_auth()
+        return await self.async_step_public_weather_areas()
 
     async def async_step_siren_auth(
         self, user_input: dict | None = None
@@ -120,13 +119,11 @@ class NetatmoOptionsFlowHandler(OptionsFlow):
         errors: dict = {}
 
         if user_input is not None:
-            email = user_input.get(CONF_SIREN_EMAIL, "").strip()
-            password = user_input.get(CONF_SIREN_PASSWORD, "").strip()
+            email = user_input.get(CONF_SIREN_EMAIL, "")
+            password = user_input.get(CONF_SIREN_PASSWORD, "")
 
             if email and password:
-                # Attempt login to get session token
                 try:
-                    # Use a dedicated session with cookie jar for the login
                     async with aiohttp.ClientSession(
                         cookie_jar=aiohttp.CookieJar()
                     ) as login_session:
@@ -137,28 +134,29 @@ class NetatmoOptionsFlowHandler(OptionsFlow):
                     self.options[CONF_SIREN_EMAIL] = email
                     self.options[CONF_SIREN_PASSWORD] = password
                     _LOGGER.debug("Netatmo siren web session login successful")
-                except aiohttp.ClientError:
+                except (aiohttp.ClientError, TimeoutError):
                     errors["base"] = "siren_login_failed"
             elif not email and not password:
-                # Clear siren credentials
+                # Clear all siren credentials
                 self.options.pop(CONF_SIREN_TOKEN, None)
                 self.options.pop(CONF_SIREN_EMAIL, None)
+                self.options.pop(CONF_SIREN_PASSWORD, None)
 
             if not errors:
-                return await self.async_step_public_weather_areas()
+                return self.async_create_entry(title="", data=self.options)
 
         current_email = self.options.get(CONF_SIREN_EMAIL, "")
         has_token = bool(self.options.get(CONF_SIREN_TOKEN))
 
         description_placeholders = {
             "status": "Configured" if has_token else "Not configured",
-            "email": current_email if current_email else "-",
+            "email": current_email or "-",
         }
 
-        data_schema = vol.Schema(
+        data_schema = probatio.Schema(
             {
-                vol.Optional(CONF_SIREN_EMAIL, default=current_email): str,
-                vol.Optional(CONF_SIREN_PASSWORD, default=""): str,
+                probatio.Optional(CONF_SIREN_EMAIL, default=current_email): str,
+                probatio.Optional(CONF_SIREN_PASSWORD, default=""): probatio.Secret(str),
             }
         )
 
