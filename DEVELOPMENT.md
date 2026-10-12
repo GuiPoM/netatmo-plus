@@ -196,6 +196,50 @@ git -C "S:\git\perso\homeassistant_core" checkout feature/netatmo-plus-validatio
 git -C "S:\git\perso\homeassistant_core" commit -m "feat: ..."
 ```
 
+### Pre-push validation — MANDATORY before any push to a PR
+
+**Never push to a HA core PR without running these checks first.** These are
+exactly what the CI runs — catching errors locally avoids polluting the PR
+history with fix commits.
+
+```powershell
+docker start magical_keller
+
+# 1. Ruff format — fix formatting issues
+docker exec magical_keller bash -c "cd /workspaces/homeassistant_core && /home/vscode/.local/ha-venv/bin/python -m ruff format homeassistant/components/netatmo/ tests/components/netatmo/"
+
+# 2. Ruff check — catch linting errors (TID251, TRY300, F821, PLC0415, etc.)
+docker exec magical_keller bash -c "cd /workspaces/homeassistant_core && /home/vscode/.local/ha-venv/bin/python -m ruff check homeassistant/components/netatmo/ tests/components/netatmo/"
+
+# 3. mypy — type checking
+docker exec magical_keller bash -c "cd /workspaces/homeassistant_core && /home/vscode/.local/ha-venv/bin/python -m mypy homeassistant/components/netatmo/ 2>&1 | tail -20"
+
+# 4. Regenerate translations
+docker exec magical_keller bash -c "cd /workspaces/homeassistant_core && /home/vscode/.local/ha-venv/bin/python -m script.translations develop --integration netatmo 2>&1 | tail -3"
+
+# 5. Tests
+docker exec magical_keller bash -c "cd /workspaces/homeassistant_core && timeout 300 /home/vscode/.local/ha-venv/bin/python -m pytest tests/components/netatmo/test_climate.py tests/components/netatmo/test_camera.py tests/components/netatmo/test_config_flow.py tests/components/netatmo/test_light.py tests/components/netatmo/test_siren.py -v 2>&1 | grep -E 'PASSED|FAILED|ERROR|passed|failed'"
+```
+
+**All must pass before pushing.** Fix any error before committing — never commit
+a "fix CI" commit on top of a PR branch.
+
+### Common HA-specific rules (AGENTS.md of home-assistant/core)
+
+- `from __future__ import annotations` is **banned** (Python 3.14 uses PEP 649)
+- Use `probatio` instead of `voluptuous` for schema validation
+- Use `dt_util.utcnow()` instead of `datetime.now(UTC)`
+- All overriding methods must have `@override` decorator
+- New platforms need `PARALLEL_UPDATES` constant at module level
+- Imports inside test functions → `PLC0415` error — always top-level
+
+### Writing files — NEVER use PowerShell Set-Content
+
+PowerShell `Set-Content` adds a UTF-8 BOM that corrupts Python files and JSON.
+Always use the `write` tool (OpenCode) or `edit` tool for file operations.
+When reading from a feature branch to copy files, use `git show` piped to
+a Python script or the `write` tool — never `Set-Content`.
+
 ### Docker devcontainer
 
 - Container: `magical_keller`
