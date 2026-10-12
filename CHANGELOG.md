@@ -4,6 +4,13 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v2026.10.0.2] — 2026-10-12
+
+### Fixed
+- `manifest.json` — use `pyatmo>=9.9.0` instead of `==9.9.0` (hassfest requirement for shared dependencies)
+
+---
+
 ## [v2026.10.0.1] — 2026-10-08
 
 ### Fixed
