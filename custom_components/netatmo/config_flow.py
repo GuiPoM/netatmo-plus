@@ -185,7 +185,7 @@ class NetatmoOptionsFlowHandler(OptionsFlow):
                     user_input={CONF_NEW_AREA: new_client}
                 )
 
-            return self._create_options_entry()
+            return await self.async_step_siren_auth()
 
         weather_areas = list(self.options[CONF_WEATHER_AREAS])
 
