@@ -110,7 +110,16 @@ class NetatmoOptionsFlowHandler(OptionsFlow):
 
     async def async_step_init(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Manage the Netatmo options."""
-        return await self.async_step_public_weather_areas()
+        return await self.async_step_options_menu()
+
+    async def async_step_options_menu(
+        self, user_input: dict | None = None
+    ) -> ConfigFlowResult:
+        """Show the independent Netatmo options."""
+        return self.async_show_menu(
+            step_id="options_menu",
+            menu_options=["public_weather_areas", "siren_auth"],
+        )
 
     async def async_step_siren_auth(
         self, user_input: dict | None = None
@@ -143,7 +152,7 @@ class NetatmoOptionsFlowHandler(OptionsFlow):
                 self.options.pop(CONF_SIREN_PASSWORD, None)
 
             if not errors:
-                return self.async_create_entry(title="", data=self.options)
+                return await self.async_step_options_menu()
 
         current_email = self.options.get(CONF_SIREN_EMAIL, "")
         has_token = bool(self.options.get(CONF_SIREN_TOKEN))
@@ -185,7 +194,7 @@ class NetatmoOptionsFlowHandler(OptionsFlow):
                     user_input={CONF_NEW_AREA: new_client}
                 )
 
-            return await self.async_step_siren_auth()
+            return await self.async_step_options_menu()
 
         weather_areas = list(self.options[CONF_WEATHER_AREAS])
 
