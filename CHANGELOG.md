@@ -13,6 +13,15 @@ This beta is published for validation before the stable release.
 
 ---
 
+## [v2026.10.1b2] — 2026-10-21 *(beta)*
+
+### Fixed
+- Options flow — use a real Home Assistant menu to expose the independent public weather and siren credential pages.
+
+This beta supersedes `v2026.10.1b1`, whose sequential options flow was broken.
+
+---
+
 ## [v2026.10.0.3] — 2026-10-12
 
 ### Fixed
