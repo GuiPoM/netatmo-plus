@@ -165,7 +165,9 @@ class NetatmoOptionsFlowHandler(OptionsFlow):
         data_schema = probatio.Schema(
             {
                 probatio.Optional(CONF_SIREN_EMAIL, default=current_email): str,
-                probatio.Optional(CONF_SIREN_PASSWORD, default=""): probatio.Secret(str),
+                probatio.Optional(
+                    probatio.Secret(CONF_SIREN_PASSWORD), default=""
+                ): str,
             }
         )
 
