@@ -120,3 +120,4 @@ class NetatmoCameraSiren(NetatmoModuleEntity, SirenEntity):
     def async_update_callback(self) -> None:
         """Update the entity's state."""
         self._attr_is_on = self.device.siren_status == "sound"
+        self.async_write_ha_state()

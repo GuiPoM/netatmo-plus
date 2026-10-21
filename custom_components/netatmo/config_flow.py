@@ -12,7 +12,6 @@ from homeassistant.config_entries import ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_SHOW_ON_MAP, CONF_UUID
 from homeassistant.core import callback
 from homeassistant.helpers import (
-    aiohttp_client,
     config_entry_oauth2_flow,
     config_validation as cv,
 )
