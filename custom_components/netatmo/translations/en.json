@@ -171,7 +171,8 @@
             "options_menu": {
                 "menu_options": {
                     "public_weather_areas": "Public weather sensors",
-                    "siren_auth": "Siren credentials"
+                    "siren_auth": "Siren credentials",
+                    "done": "Done"
                 },
                 "title": "Netatmo options"
             },

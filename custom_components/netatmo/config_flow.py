@@ -118,8 +118,14 @@ class NetatmoOptionsFlowHandler(OptionsFlow):
         """Show the independent Netatmo options."""
         return self.async_show_menu(
             step_id="options_menu",
-            menu_options=["public_weather_areas", "siren_auth"],
+            menu_options=["public_weather_areas", "siren_auth", "done"],
         )
+
+    async def async_step_done(
+        self, user_input: dict | None = None
+    ) -> ConfigFlowResult:
+        """Save the options changes."""
+        return self._create_options_entry()
 
     async def async_step_siren_auth(
         self, user_input: dict | None = None
