@@ -4,6 +4,15 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
+## [v2026.10.1b1] — 2026-10-21 *(beta)*
+
+### Fixed
+- Options flow — the optional siren credentials page is now reached after the public weather options page, without making either feature mandatory.
+
+This beta is published for validation before the stable release.
+
+---
+
 ## [v2026.10.0.3] — 2026-10-12
 
 ### Fixed
