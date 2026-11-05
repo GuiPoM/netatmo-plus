@@ -24,9 +24,6 @@ TO_REDACT = {
     "zones",
     "pseudo",
     "url",
-    "siren_email",
-    "siren_password",
-    "siren_token",
 }
 
 
@@ -40,7 +37,8 @@ async def async_get_config_entry_diagnostics(
         "info": async_redact_data(
             {
                 **config_entry.as_dict(),
-                "webhook_registered": data_handler.webhook,
+                "webhook_registered": data_handler.webhook_registered,
+                "webhook_delivering": data_handler.webhook_delivering,
             },
             TO_REDACT,
         ),
