@@ -4,7 +4,7 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
-## [v2026.11.0b2] — 2026-11-05 *(beta)*
+## [v2026.11.0b1] — 2026-11-05 *(beta)*
 
 ### Fixed
 - Reintroduced the NOC siren dispatcher in the HA 2026.11 coordinator port so the Presence siren entity is still created.
