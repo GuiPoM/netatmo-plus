@@ -4,10 +4,13 @@ All notable changes to Netatmo Plus are documented here.
 
 ---
 
-## [v2026.11.0b1] — 2026-11-05 *(beta)*
+## [v2026.11.0] — 2026-11-05
 
-### Fixed
-- Reintroduced the NOC siren dispatcher in the HA 2026.11 coordinator port so the Presence siren entity is still created.
+### Changed
+- Based on Home Assistant 2026.11.0.
+- Preserves Netatmo Plus climate, camera, floodlight, siren, and web-auth functionality.
+- Migrates from the obsolete `data_handler.py` structure to the HA 2026.11 coordinator structure.
+- Restores the NOC siren dispatcher in the HA 2026.11 coordinator.
 
 ---
 
